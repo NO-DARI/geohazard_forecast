@@ -949,38 +949,56 @@ function setTimeMode(m){
 
 /* ---------- news: Claude API ---------- */
 async function fetchNews(){
-  const q=document.getElementById('news-q').value.trim();
+  const q = document.getElementById('news-q').value.trim();
   if(!q){alert('ჩაწერეთ საძიებო სიტყვა');return;}
-  const box=document.getElementById('news-result');
-  box.innerHTML='<div class="nspin">ქართულ ახალ ამბებს ვეძებ…</div>';
+  const box = document.getElementById('news-result');
+  box.innerHTML = '<div class="nspin">ქართულ ახალ ამბებს ვეძებ…</div>';
+
+  // ── 7-დღიანი ვადა + სტიქიის ტერმინი ──────────────────────────────────
+  const _now = new Date();
+  const _cutoff = new Date(_now.getTime() - 7*24*3600*1000);
+  const _fmtDate = d => d.toLocaleDateString('ka-GE', {day:'2-digit', month:'2-digit', year:'numeric'});
+  const _fmtISO  = d => d.toISOString().slice(0,10);
+  const dateWindow = _fmtDate(_cutoff) + ' – ' + _fmtDate(_now);
+  // ძიების ტერმინს ვუმატებთ "სტიქია" თუ უკვე არ შეიცავს
+  const qBase = q;
+  const qSearch = /სტიქ/i.test(q) ? q : q + ' სტიქია OR სტიქიური მოვლენა';
 
   // Build context from selected municipality if any
-  let muniCtx='';
+  let muniCtx = '';
   if(window._selected){
-    const rec=window._selected;
-    const dy=getSlot();
-    const d=rec.days[dy];
-    muniCtx=`\nმიმდინარე პროგნოზი (${rec.muni.n}): წყალდიდობა ${Math.round(d.flood)}/100, მეწყერი ${Math.round(d.land)}/100, სიცხე ${Math.round(d.heat)}/100, ქარი ${Math.round(d.wind)}/100, ნალექი ${d.wx.precip.toFixed(1)}mm.`;
+    const rec = window._selected;
+    const dy = getSlot();
+    const d = rec.days[dy];
+    muniCtx = `\nმიმდინარე პროგნოზი (${rec.muni.n}): წყალდიდობა ${Math.round(d.flood)}/100, მეწყერი ${Math.round(d.land)}/100, სიცხე ${Math.round(d.heat)}/100, ქარი ${Math.round(d.wind)}/100, ნალექი ${d.wx.precip.toFixed(1)}mm.`;
   }
 
-  const prompt=`შენ ხარ GeoHazard-ის ასისტენტი — საქართველოს საფრთხის პროგნოზული სისტემა.
+  const prompt = `შენ ხარ GeoHazard-ის ასისტენტი — საქართველოს საფრთხის პროგნოზული სისტემა.
 
-მომხმარებელი ეძებს: "${q}"${muniCtx}
+მომხმარებელი ეძებს: "${qBase}"${muniCtx}
+
+დღეს არის: ${_fmtDate(_now)}. ᲛᲙᲐᲪᲠᲘ ᲬᲔᲡᲘ — 7 ᲓᲦᲘᲡ ᲚᲘᲛᲘᲢᲘ:
+• გამოიყენე ᲛᲮᲝᲚᲝᲓ სიახლეები პერიოდიდან: ${dateWindow}
+• ამ პერიოდზე ძველი სტატია (თუნდაც ერთი დღით) — სრულად ᲒᲐᲛᲝᲢᲝᲕᲔ
+• ძიების ტერმინი: "${qSearch}" (ქართულ საიტებზე)
 
 გთხოვ:
-1. ვებ-ძიებით მოძებნე ბოლო 7-14 დღის ქართული სიახლეები ამ თემაზე (გამოიყენე search ინსტრუმენტი).
-2. მოიყვანე 3-5 კონკრეტული შეტყობინება (წყარო, თარიღი, შინაარსი 2-3 წინადადებით).
-3. შეადარე ამ ინფორმაციას GeoHazard-ის პროგნოზს: ემთხვევა თუ განსხვავდება?
-4. მოკლე დასკვნა.
+1. web_search-ით მოძებნე: "${qSearch}" — ბოლო 7 დღე (${_fmtISO(_cutoff)}-დან)
+2. გადაამოწმე თითოეული შედეგის თარიღი — 7 დღეზე ძველი ᲐᲠ ჩართო
+3. მოიყვანე 3–5 სიახლე (წყარო, ზუსტი თარიღი DD.MM.YYYY, შინაარსი 2–3 წინადადება)
+4. შეადარე GeoHazard-ის პროგნოზს
+5. მოკლე დასკვნა
 
-გამოიყენე ქართული ენა. ფორმატი: JSON მასივი ასეთი სტრუქტურით:
+თუ ბოლო 7 დღეში შესაბამისი სიახლე ვერ მოიძებნა — conclusion-ში ისე დაწერე.
+
+JSON პასუხი:
 {
   "items": [
-    {"title":"სათაური","source":"წყარო","date":"თარიღი","summary":"შინაარსი","match":"hi|mod|low","matchLabel":"ემთხვევა|ნაწილობრივ|განსხვავდება"}
+    {"title":"სათაური","source":"წყარო","date":"DD.MM.YYYY","summary":"შინაარსი","match":"hi|mod|low","matchLabel":"ემთხვევა|ნაწილობრივ|განსხვავდება"}
   ],
-  "conclusion": "მოკლე დასკვნა"
+  "conclusion": "დასკვნა"
 }
-დააბრუნე მხოლოდ JSON, სხვა ტექსტის გარეშე.`;
+მხოლოდ JSON, სხვა ტექსტის გარეშე.`;
 
   try{
     const resp=await fetch("https://api.anthropic.com/v1/messages",{
