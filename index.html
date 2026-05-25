@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>GeoHazard — საქართველოს საფრთხეების პროგნოზული რუკა</title>
 <meta name="description" content="საქართველოს მუნიციპალიტეტებისა და დასახლებების მრავალსაფრთხიანი რისკების ინტერაქტიული რუკა ამინდის 7-დღიან პროგნოზზე დაყრდნობით.">
-<!-- ▼▼▼ გასაზიარებლად: https://no-dari.github.io/geohazard_forecast/ ▼▼▼ -->
+<!-- ▼▼▼ გასაზიარებლად: შეცვალე YOURNAME შენი GitHub/ჰოსტის მისამართით (აუცილებლად აბსოლუტური https URL) ▼▼▼ -->
 <meta property="og:type" content="website">
 <meta property="og:title" content="GeoHazard — პროგნოზული რისკების რუკა · საქართველო">
 <meta property="og:description" content="წყალდიდობა · მეწყერი · ზვავი · სიცხე · ქარი · ხანძარი — მუნიციპალიტეტებისა და სოფლების მიხედვით, 7-დღიანი პროგნოზით.">
@@ -315,13 +315,7 @@ aside{
     <button class="bndbtn active" id="bnd-adm2" onclick="setBndMode('adm2')" title="მუნიციპალიტეტები">🗺 მუნ.</button>
     <button class="bndbtn"        id="bnd-adm1" onclick="setBndMode('adm1')" title="რეგიონები">🏛 რეგ.</button>
   </div>
-  <div style="display:flex;align-items:center;gap:0;background:var(--panel);border:1px solid var(--line);border-radius:9px;overflow:hidden;margin-left:4px">
-    <button class="bndbtn active" id="wx-none"   onclick="setWxLayer('none')"   title="რისკის ჩვენება">◆ რისკი</button>
-    <button class="bndbtn"        id="wx-precip" onclick="setWxLayer('precip')" title="ნალექი (მმ/დღე)">🌧 ნალექი</button>
-    <button class="bndbtn"        id="wx-wind"   onclick="setWxLayer('wind')"   title="ქარი (კმ/სთ)">🌬 ქარი</button>
-    <button class="bndbtn"        id="wx-temp"   onclick="setWxLayer('temp')"   title="ტ° მაქსიმუმი">🌡 ტემპ.</button>
-  </div>
-  <div class="daybox">
+    <div class="daybox">
     <button class="daynav" onclick="stepDay(-1)" aria-label="წინა დღე">‹</button>
     <div class="daywrap">
       <div class="dlabel" id="dlabel">—</div>
@@ -957,15 +951,10 @@ function buildLayer(){
     layer.on('click',()=>{const rec=recByName[f.__id];if(rec)selectMuni(rec);});
   }}).addTo(map);
   // ── რეგიონების საზღვარი — თეთრი სქელი ხაზი, fill გარეშე ─────────────
+  // ── რეგიონების საზღვარი — interactive:false, კლიკი მუნ.-ს გადაეცემა ──
   regionLayer=L.geoJSON(REGIONS,{
-    style:()=>({color:'rgba(255,255,255,0.7)',weight:2.5,fillOpacity:0,lineJoin:'round'}),
-    onEachFeature:(f,layer)=>{
-      layer.on('mouseover',e=>{
-        L.popup().setLatLng(e.latlng)
-         .setContent('<div class="pp-nm">'+f.properties.name_ka+'</div><div class="pp-rg">რეგიონი</div>')
-         .openOn(map);
-      });
-    }
+    style:()=>({color:'rgba(255,255,255,0.72)',weight:2.8,fillOpacity:0,lineJoin:'round'}),
+    interactive:false
   }).addTo(map);
 }
 function styleLayer(){
