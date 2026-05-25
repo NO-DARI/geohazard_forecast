@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GeoHazard — საქართველოს საფრთხეების პროგნოზული რუკა</title>
+<title>GeoHazard — საქართველოს ჰიდრომეტსაფრთხეების პროგნოზული რუკა</title>
 <meta name="description" content="საქართველოს მუნიციპალიტეტებისა და დასახლებების მრავალსაფრთხიანი რისკების ინტერაქტიული რუკა ამინდის 7-დღიან პროგნოზზე დაყრდნობით.">
-<!-- ▼▼▼ გასაზიარებლად: შეცვალე YOURNAME შენი GitHub/ჰოსტის მისამართით (აუცილებლად აბსოლუტური https URL) ▼▼▼ -->
+<!-- ▼▼▼ გასაზიარებლად:  https://no-dari.github.io/geohazard_forecast/ ▼▼▼ -->
 <meta property="og:type" content="website">
 <meta property="og:title" content="GeoHazard — პროგნოზული რისკების რუკა · საქართველო">
 <meta property="og:description" content="წყალდიდობა · მეწყერი · ზვავი · სიცხე · ქარი · ხანძარი — მუნიციპალიტეტებისა და სოფლების მიხედვით, 7-დღიანი პროგნოზით.">
@@ -662,95 +662,68 @@ async function fetchWeather(pts){
   return acc;
 }
 
-/* ---------- საზღვრების toggle ---------- */
-async function setBndMode(mode){
-  if(state.bndMode===mode) return;
-  state.bndMode=mode;
-  document.getElementById('bnd-adm2').classList.toggle('active', mode==='adm2');
-  document.getElementById('bnd-adm1').classList.toggle('active', mode==='adm1');
+/* ---------- საზღვრების toggle (განახლებული) ---------- */
+async function setBndMode(mode) {
+  if (state.bndMode === mode) return;
+  
+  const loadDiv = document.getElementById('load');
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 8000); 
 
-  const cache = mode==='adm2' ? cacheADM2 : cacheADM1;
-  if(cache.data){
-    // Already loaded — just switch
-    data=cache.data; recByName=cache.recByName; activeGeo=cache.geo;
-    buildLayer(); recomputeOverall(); render();
-    updateSrcNote();
-    return;
-  }
-  // Need to load ADM1 (REGIONS is always embedded)
-  document.getElementById('load').classList.remove('hidden');
-  setLoad(mode==='adm1'?'რეგიონების ჩატვირთვა…':'მუნიციპალიტეტების ჩატვირთვა…');
+  loadDiv.classList.remove('hidden');
+  setLoad(mode === 'adm1' ? 'რეგიონების ჩატვირთვა…' : 'მუნიციპალიტეტების ჩატვირთვა…');
 
-  let munis;
-  if(mode==='adm1'){
-    activeGeo=REGIONS; FALLBACK=true;
-    munis=REGIONS.features.map((f,i)=>{
-      const [lat,lon]=featCentroid(f.geometry); const nm=nearestMuni(lat,lon);
-      f.__id=i;
-      return {id:i, n:f.properties.name_ka, r:'რეგიონი (ADM1)', lat, lon,
-        c:(lon<42.05&&lat>41.5&&lat<42.7)?1:0, tGuess:(nm.d<1.2?nm.m.t:'mountain'), isRegion:true};
-    });
-  } else {
-    // ADM2: use already-fetched boundaries if available
-    if(!boundaries){
-      for(const u of BND_URLS){
-        try{const r=await fetch(u);if(!r.ok)continue;const gj=await r.json();if(gj&&gj.features&&gj.features.length){boundaries=gj;break;}}catch(e){}
-      }
+  try {
+    state.bndMode = mode;
+    document.getElementById('bnd-adm2').classList.toggle('active', mode === 'adm2');
+    document.getElementById('bnd-adm1').classList.toggle('active', mode === 'adm1');
+
+    const cache = mode === 'adm2' ? cacheADM2 : cacheADM1;
+    if (cache.data) {
+      data = cache.data; recByName = cache.recByName; activeGeo = cache.geo;
+      buildLayer(); recomputeOverall(); render();
+      updateSrcNote();
+      return;
     }
-    if(boundaries){
-      FALLBACK=false; activeGeo=boundaries;
-      munis=boundaries.features.map((f,i)=>{
-        const [lat,lon]=featCentroid(f.geometry); const nm=nearestMuni(lat,lon);
-        f.__id=i;
-        return {id:i, n:nm.d<0.30?nm.m.n:(f.properties.shapeName||('ერთეული '+i)), r:nm.d<0.30?nm.m.r:'—',
-          lat, lon, c:(lon<42.05&&lat>41.5&&lat<42.7)?1:0, tGuess:(nm.d<0.6?nm.m.t:'mountain')};
+
+    if (mode === 'adm1') {
+      activeGeo = REGIONS; FALLBACK = true;
+      data = REGIONS.features.map((f, i) => {
+        const [lat, lon] = featCentroid(f.geometry);
+        const nm = nearestMuni(lat, lon);
+        f.__id = i;
+        const u = { id: i, n: f.properties.name_ka, r: 'რეგიონი (ADM1)', lat, lon, c: (lon < 42.05 && lat > 41.5 && lat < 42.7) ? 1 : 0, tGuess: (nm.d < 1.2 ? nm.m.t : 'mountain'), isRegion: true };
+        const b = buildDays(u, null);
+        return { muni: { ...u, t: b.ter, elev: b.elev }, days: b.days };
       });
     } else {
-      // ADM2 unavailable — silently fall back to ADM1
-      state.bndMode='adm1'; setBndMode('adm1'); return;
+      if (!boundaries) {
+        const response = await fetch(BND_URLS[0], { signal: controller.signal });
+        boundaries = await response.json();
+      }
+      activeGeo = boundaries; FALLBACK = false;
+      data = boundaries.features.map((f, i) => {
+        const [lat, lon] = featCentroid(f.geometry);
+        const nm = nearestMuni(lat, lon);
+        f.__id = i;
+        const u = { id: i, n: nm.d < 0.30 ? nm.m.n : (f.properties.shapeName || ('ერთეული ' + i)), r: nm.d < 0.30 ? nm.m.r : '—', lat, lon, c: (lon < 42.05 && lat > 41.5 && lat < 42.7) ? 1 : 0, tGuess: (nm.d < 0.6 ? nm.m.t : 'mountain') };
+        const b = buildDays(u, null);
+        return { muni: { ...u, t: b.ter, elev: b.elev }, days: b.days };
+      });
     }
+
+    cache.data = data; cache.geo = activeGeo; cache.recByName = {};
+    data.forEach(rec => cache.recByName[rec.muni.id] = rec);
+    recByName = cache.recByName;
+    
+    recomputeOverall(); render(); updateSrcNote();
+  } catch (e) {
+    console.error('Data load error:', e);
+  } finally {
+    clearTimeout(timeoutId);
+    loadDiv.classList.add('hidden');
   }
-
-  const vills=SETTLE.map((s,k)=>{const nm=nearestMuni(s.lat,s.lon);
-    return {vid:k, n:s.n, lat:s.lat, lon:s.lon, host:nm.m.n, r:nm.m.r,
-      c:(s.lon<42.05&&s.lat>41.5&&s.lat<42.7)?1:0, tGuess:(nm.d<0.7?nm.m.t:'hilly')};});
-
-  const pts=munis.concat(vills);
-  setLoad('პროგნოზის ჩამოტვირთვა… ('+pts.length+' წერტილი)');
-  let results=null;
-  try{ results=await fetchWeather(pts); DEMO=false; }
-  catch(e){ DEMO=true; console.warn('live fetch → demo:', e&&e.message); }
-
-  const newData=munis.map((u,i)=>{const b=buildDays(u, results?results[i]:null); return {muni:{...u,t:b.ter,elev:b.elev}, days:b.days};});
-  const newRecByName={}; newData.forEach(rec=>newRecByName[rec.muni.id]=rec);
-  const newSettleP=vills.map((u,j)=>{
-    const b=buildDays(u, results?results[munis.length+j]:null);
-    return {n:u.n, lat:u.lat, lon:u.lon,
-      rec:{muni:{n:u.n, r:u.host+(u.r&&u.r!=='—'?' · '+u.r:''), lat:u.lat, lon:u.lon, t:b.ter, elev:b.elev, c:u.c, isVillage:true}, days:b.days}};
-  });
-
-  // Save to cache
-  cache.data=newData; cache.geo=activeGeo; cache.recByName=newRecByName;
-
-  data=newData; recByName=newRecByName; SETTLEP=newSettleP;
-  document.getElementById('stamp').textContent=(DEMO?'დემო · ':'')+new Date().toLocaleString('ka-GE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
-  updateSrcNote();
-  buildLayer(); recomputeOverall(); render();
-  document.getElementById('load').classList.add('hidden');
 }
-
-function updateSrcNote(){
-  const muniCount=data.length;
-  document.getElementById('srcnote').innerHTML=
-    (DEMO?'⚠ დემო რეჟიმი — live API მიუწვდომელია. <b>GitHub Pages-ზე live მონაცემები მუშაობს.</b><br>':'')
-    +(state.bndMode==='adm1'
-      ? '🏛 რეგიონები ADM1 (embedded) · '+muniCount+' · <a href="#" onclick="setBndMode('adm2');return false;" style="color:var(--accent)">გადართვა ADM2-ზე</a>'
-      : (FALLBACK
-          ? '⚠ ADM2 ვერ ჩაიტვირთა — ADM1 რეჟიმი'
-          : '🗺 geoBoundaries ADM2 (CC BY 4.0) · '+muniCount+' მუნ.'))
-    +' · დასახლება: '+SETTLE.length;
-}
-
 /* ---------- data fetch ---------- */
 async function loadAll(){
   document.getElementById('load').classList.remove('hidden');
