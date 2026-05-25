@@ -203,6 +203,48 @@ aside{
 .hz.calib{background:var(--panel2);border-style:dashed;color:var(--accent)}
 .hz.calib:hover{background:#1f2c45}
 
+/* ---------- time mode toggle ---------- */
+.timetog{display:flex;align-items:center;gap:0;background:var(--panel);border:1px solid var(--line);border-radius:9px;overflow:hidden;margin-left:4px}
+.tmbtn{border:none;background:none;color:var(--muted);font-family:'Noto Sans Georgian',sans-serif;font-size:11.5px;font-weight:600;padding:7px 11px;cursor:pointer;border-right:1px solid var(--line);white-space:nowrap}
+.tmbtn:last-child{border-right:none}
+.tmbtn.active{background:var(--accent);color:#04121f}
+.tmbtn:hover:not(.active){color:var(--ink)}
+
+/* ---------- boundary toggle ---------- */
+.bndsw{display:flex;align-items:center;gap:0;background:var(--panel);border:1px solid var(--line);border-radius:9px;overflow:hidden;margin-left:4px}
+.bndbtn{border:none;background:none;color:var(--muted);font-family:'Noto Sans Georgian',sans-serif;font-size:11px;font-weight:600;padding:7px 10px;cursor:pointer;border-right:1px solid var(--line);white-space:nowrap;transition:.15s}
+.bndbtn:last-child{border-right:none}
+.bndbtn.active{background:var(--accent);color:#04121f}
+.bndbtn:hover:not(.active){color:var(--ink)}
+
+/* ---------- fill mode toggle ---------- */
+.fillsw{display:flex;align-items:center;gap:0;background:var(--panel);border:1px solid var(--line);border-radius:9px;overflow:hidden;margin-left:4px}
+.fillbtn{border:none;background:none;color:var(--muted);font-family:'Noto Sans Georgian',sans-serif;font-size:11px;font-weight:600;padding:7px 10px;cursor:pointer;border-right:1px solid var(--line)}
+.fillbtn:last-child{border-right:none}
+.fillbtn.active{background:var(--panel2);color:var(--accent);border-bottom:2px solid var(--accent)}
+.fillbtn:hover:not(.active){color:var(--ink)}
+
+/* ---------- news panel ---------- */
+.news-panel{padding:14px 16px;border-top:2px solid var(--accent);background:var(--bg2)}
+.news-panel h2{font-family:'Noto Serif Georgian',serif;font-size:12px;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:7px;justify-content:space-between}
+.news-srch{display:flex;gap:6px;margin-bottom:10px}
+.news-srch input{flex:1;background:var(--panel2);border:1px solid var(--line);border-radius:7px;color:var(--ink);font-family:'Noto Sans Georgian',sans-serif;font-size:12px;padding:7px 10px;outline:none}
+.news-srch input:focus{border-color:var(--accent)}
+.news-srch button{border:1px solid var(--accent);background:var(--accent);color:#04121f;border-radius:7px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Noto Sans Georgian',sans-serif;white-space:nowrap}
+.news-srch button:hover{opacity:.85}
+.news-result{font-size:12px;line-height:1.6;color:var(--ink);max-height:320px;overflow-y:auto;padding-right:4px}
+.news-result .nspin{color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:11px;display:flex;align-items:center;gap:8px;padding:12px 0}
+.news-result .nspin::before{content:'';width:14px;height:14px;border:2px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:sp .8s linear infinite;flex:0 0 auto}
+.news-item{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:8px}
+.news-item .ni-head{font-weight:700;color:var(--accent);font-size:12px;margin-bottom:4px;display:flex;align-items:flex-start;gap:6px}
+.news-item .ni-src{font-size:10px;color:var(--muted);margin-bottom:5px;font-family:'JetBrains Mono',monospace}
+.news-item .ni-txt{font-size:11.5px;line-height:1.55;color:var(--ink)}
+.news-item .ni-match{display:inline-block;font-size:10px;padding:2px 7px;border-radius:10px;font-weight:700;margin-top:6px}
+.ni-match.hi{background:rgba(226,84,58,.2);color:var(--r-high)}
+.ni-match.mod{background:rgba(230,200,79,.15);color:var(--r-mod)}
+.ni-match.low{background:rgba(46,194,126,.15);color:var(--r-low)}
+.news-note{font-size:10.5px;color:var(--dim);margin-top:8px;line-height:1.5}
+
 .modal{position:absolute;inset:0;z-index:3000;background:rgba(6,9,15,.7);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;padding:24px}
 .modal.open{display:flex}
 .modal-box{width:min(620px,100%);max-height:88vh;background:var(--panel);border:1px solid var(--line);border-radius:16px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.6)}
@@ -261,6 +303,18 @@ aside{
   <div class="hazards" id="hazards"></div>
   <button class="hz calib" onclick="document.getElementById('ahp').classList.add('open')">⚙ AHP</button>
   <button class="hz villtog" id="villtog" onclick="toggleVillages()">🏘 სოფლები</button>
+  <div class="timetog">
+    <button class="tmbtn" id="tm-hist" onclick="setTimeMode('history')">◀ 7 დღე უკან</button>
+    <button class="tmbtn active" id="tm-fore" onclick="setTimeMode('forecast')">პროგნოზი ▶</button>
+  </div>
+  <div class="fillsw">
+    <button class="fillbtn" id="fill-border" onclick="setFillMode('border')">◻ საზღვარი</button>
+    <button class="fillbtn" id="fill-solid" onclick="setFillMode('solid')">◼ სოლიდი</button>
+  </div>
+  <div class="bndsw">
+    <button class="bndbtn active" id="bnd-adm2" onclick="setBndMode('adm2')" title="მუნიციპალიტეტები (ADM2)">🗺 მუნ.</button>
+    <button class="bndbtn" id="bnd-adm1" onclick="setBndMode('adm1')" title="რეგიონები (ADM1)">🏛 რეგ.</button>
+  </div>
   <div class="daybox">
     <button class="daynav" onclick="stepDay(-1)" aria-label="წინა დღე">‹</button>
     <div class="daywrap">
@@ -302,6 +356,17 @@ aside{
     <div class="note">
       <div id="srcnote" style="color:var(--accent);font-weight:600;margin-bottom:8px;font-size:10.5px">საზღვრების ჩატვირთვა…</div>
       <b>მეთოდოლოგია:</b> რისკის ინდექსი (0–100) გამოითვლება ამინდის პროგნოზიდან ჰევრისტიკული მოდელით — ნალექი, 3-დღიანი დაგროვება, თოვლი, ქარი, ტემპერატურა, სიმშრალე. მუნიციპალიტეტი იყენებს ცენტროიდის, დასახლება — <b>საკუთარი კოორდინატის</b> პროგნოზს (ცალკე Open-Meteo მოთხოვნა). რელიეფი განისაზღვრება grid-ის სიმაღლიდან; საფრთხეთა წონები — AHP-ით. ეს არის სკრინინგ-ინსტრუმენტი (ადრეული გაფრთხილება), არა ვალიდირებული საინჟინრო პროგნოზი. რეალური DEM/დახრილობა და ნიადაგის ფენები შემდეგ ეტაპზე ჩაერთვება.
+    </div>
+    <!-- NEWS PANEL -->
+    <div class="news-panel">
+      <h2><span>📰 პრესა vs პროგნოზი</span><span style="font-size:9px;color:var(--dim);font-weight:400;text-transform:none">Claude API</span></h2>
+      <div class="news-srch">
+        <input id="news-q" type="text" placeholder="მუნიციპალიტეტი ან საფრთხე…" value="">
+        <button onclick="fetchNews()">🔍 ძიება</button>
+      </div>
+      <div class="news-result" id="news-result">
+        <div style="color:var(--dim);font-size:11.5px;padding:8px 0">აირჩიე მუნიციპალიტეტი ან ჩაწერე საძიებო სიტყვა და დააჭირე ძიებას. Claude გაეცნობა ქართულ ახალ ამბებს და შეადარებს პროგნოზს.</div>
+      </div>
     </div>
   </aside>
 
@@ -442,9 +507,10 @@ const PRESETS={
  'მთის უსაფრთხოება':[0.17,0.26,0.34,0.05,0.12,0.06],
  'ზაფხული · ხანძარი':[0.10,0.08,0.02,0.34,0.16,0.30],
 };
-let state = {hazard:"overall", day:0, aggMethod:"ahp", slider:[], weights:[1/6,1/6,1/6,1/6,1/6,1/6], cr:0};
+let state = {hazard:"overall", day:0, aggMethod:"ahp", slider:[], weights:[1/6,1/6,1/6,1/6,1/6,1/6], cr:0, fillMode:"border", timeMode:"forecast", bndMode:"adm2"};
 let data = [];        // per muni: {muni, daily:[{...risks, wx}]}
 let markerRefs=[], geoLayer=null, boundaries=null, FALLBACK=false, recByName={};
+let cacheADM2={data:null,geo:null,recByName:{}}, cacheADM1={data:null,geo:null,recByName:{}};
 let map, selected = null;
 const SETTLE=[{"n":"Abasha","lat":42.2045,"lon":42.2036},{"n":"Abastumani","lat":41.7534,"lon":42.832},{"n":"Adigeni","lat":41.6756,"lon":42.7029},{"n":"Agara","lat":42.0376,"lon":43.8238},{"n":"Aghaiani","lat":41.9144,"lon":44.5432},{"n":"Akhaldaba","lat":41.9295,"lon":43.4876},{"n":"Akhalgori","lat":42.1243,"lon":44.4831},{"n":"Akhali Atoni","lat":43.0843,"lon":40.8185},{"n":"Akhalkalaki","lat":41.4051,"lon":43.4863},{"n":"Akhaltsikhe","lat":41.639,"lon":42.9826},{"n":"Akhmeta","lat":42.035,"lon":45.208},{"n":"Ambrolauri","lat":42.5211,"lon":43.1622},{"n":"Anaklia","lat":42.393,"lon":41.5623},{"n":"Aspindza","lat":41.5731,"lon":43.2484},{"n":"Bagdadi","lat":41.8167,"lon":46.0333},{"n":"Bakuriani","lat":41.753,"lon":43.5291},{"n":"Bakurianis Andeziti","lat":41.7337,"lon":43.4724},{"n":"Batumi","lat":41.6423,"lon":41.6339},{"n":"Bichvinta","lat":43.1593,"lon":40.3398},{"n":"Bolnisi","lat":41.4512,"lon":44.5384},{"n":"Borjomi","lat":41.8469,"lon":43.3971},{"n":"Chakvi","lat":41.7253,"lon":41.7328},{"n":"Chiatura","lat":42.2981,"lon":43.2989},{"n":"Chkhorotsqu","lat":42.5195,"lon":42.1273},{"n":"Chlou","lat":42.8833,"lon":41.4948},{"n":"Chokhatauri","lat":42.019,"lon":42.2394},{"n":"Dedoplistsqaro","lat":41.4657,"lon":46.1039},{"n":"Didi Lilo","lat":41.7361,"lon":44.9647},{"n":"Dioknisi","lat":41.6293,"lon":42.3917},{"n":"Dmanisi","lat":41.3318,"lon":44.203},{"n":"Dranda","lat":42.8717,"lon":41.1533},{"n":"Dusheti","lat":42.0864,"lon":44.695},{"n":"Dzegvi","lat":41.8457,"lon":44.601},{"n":"Gagra","lat":43.2786,"lon":40.2712},{"n":"Gali","lat":42.627,"lon":41.7364},{"n":"Gantiadi","lat":43.3811,"lon":40.0794},{"n":"Gardabani","lat":41.4597,"lon":45.0899},{"n":"Gori","lat":41.9842,"lon":44.1158},{"n":"Gudauri","lat":42.478,"lon":44.4762},{"n":"Gudauta","lat":43.1019,"lon":40.6225},{"n":"Gulripshi","lat":42.9306,"lon":41.1026},{"n":"Gurjaani","lat":41.7438,"lon":45.8025},{"n":"Ingiri","lat":42.4963,"lon":41.8122},{"n":"Java","lat":42.3899,"lon":43.9242},{"n":"Jvara","lat":41.5251,"lon":44.3472},{"n":"Jvari","lat":42.7169,"lon":42.052},{"n":"Kardenakhi","lat":41.6736,"lon":45.8893},{"n":"Kaspi","lat":41.9278,"lon":44.4235},{"n":"Katskhi","lat":42.2839,"lon":43.2087},{"n":"Keda","lat":41.5995,"lon":41.9395},{"n":"Kelasuri","lat":42.9788,"lon":41.0707},{"n":"Kharagauli","lat":42.0214,"lon":43.1977},{"n":"Khashuri","lat":41.9973,"lon":43.599},{"n":"Khelvachauri","lat":41.5845,"lon":41.6731},{"n":"Khobi","lat":42.3175,"lon":41.9002},{"n":"Khoni","lat":42.3254,"lon":42.4224},{"n":"Khulo","lat":41.6452,"lon":42.3146},{"n":"Kobuleti","lat":41.8328,"lon":41.7782},{"n":"Kojori","lat":41.6589,"lon":44.7001},{"n":"Kulashi","lat":42.2064,"lon":42.3461},{"n":"Kurdghelauri","lat":41.9294,"lon":45.4881},{"n":"Kutaisi","lat":42.2679,"lon":42.6946},{"n":"Kveda Chkhorotsqu","lat":42.4916,"lon":42.1109},{"n":"Lagodekhi","lat":41.8275,"lon":46.2749},{"n":"Lanchkhuti","lat":42.0874,"lon":42.0361},{"n":"Lentekhi","lat":42.7889,"lon":42.7223},{"n":"Makhinjauri","lat":41.6739,"lon":41.694},{"n":"Manglisi","lat":41.697,"lon":44.3845},{"n":"Marneuli","lat":41.4876,"lon":44.7985},{"n":"Martqopi","lat":41.7873,"lon":45.023},{"n":"Martvili","lat":42.4143,"lon":42.3789},{"n":"Matani","lat":42.078,"lon":45.1956},{"n":"Mestia","lat":43.0438,"lon":42.7237},{"n":"Mtskheta","lat":41.8451,"lon":44.7188},{"n":"Narazeni","lat":42.3719,"lon":41.9108},{"n":"Naruja","lat":41.9069,"lon":41.9542},{"n":"Ninotsminda","lat":41.267,"lon":43.5896},{"n":"Ochamchire","lat":42.7123,"lon":41.4686},{"n":"Ochkhamuri","lat":41.8571,"lon":41.8322},{"n":"Oni","lat":42.5845,"lon":43.4436},{"n":"Orsantia","lat":42.4678,"lon":41.6738},{"n":"Ozurgeti","lat":41.9244,"lon":42.0068},{"n":"Pasanauri","lat":42.3506,"lon":44.6891},{"n":"Poti","lat":42.1427,"lon":41.6738},{"n":"Primorskoe","lat":43.0924,"lon":40.6965},{"n":"Qvareli","lat":41.9549,"lon":45.8172},{"n":"Rustavi","lat":41.5627,"lon":44.9787},{"n":"Sachkhere","lat":42.3453,"lon":43.4194},{"n":"Sadakhlo","lat":41.2402,"lon":44.7891},{"n":"Sagarejo","lat":41.7369,"lon":45.326},{"n":"Samtredia","lat":42.1537,"lon":42.3352},{"n":"Sartichala","lat":41.7179,"lon":45.1757},{"n":"Senaki","lat":42.2708,"lon":42.0633},{"n":"Shaumiani","lat":41.3513,"lon":44.7645},{"n":"Shemokmedi","lat":41.9096,"lon":42.0669},{"n":"Shorapani","lat":42.096,"lon":43.0825},{"n":"Shuakhevi","lat":41.6257,"lon":42.1861},{"n":"Sighnaghi","lat":41.6192,"lon":45.9223},{"n":"Sokhumi","lat":43.007,"lon":40.9893},{"n":"Stantsiya Novyy Afon","lat":43.0806,"lon":40.8383},{"n":"Stepantsminda","lat":42.6569,"lon":44.6431},{"n":"Surami","lat":42.0243,"lon":43.5556},{"n":"Tbilisi","lat":41.6941,"lon":44.8337},{"n":"Telavi","lat":41.9198,"lon":45.4731},{"n":"Terjola","lat":42.1806,"lon":42.9776},{"n":"Tetri Tsqaro","lat":41.5438,"lon":44.4618},{"n":"Tianeti","lat":42.1099,"lon":44.9678},{"n":"Tqibuli","lat":42.3478,"lon":42.9977},{"n":"Tqvarcheli","lat":42.8404,"lon":41.6801},{"n":"Tsageri","lat":42.6453,"lon":42.7691},{"n":"Tsaghveri","lat":41.8036,"lon":43.4819},{"n":"Tsalenjikha","lat":42.6086,"lon":42.0669},{"n":"Tsalka","lat":41.5982,"lon":44.0911},{"n":"Tsikhisdziri","lat":41.7666,"lon":41.7552},{"n":"Tsinandali","lat":41.8931,"lon":45.5713},{"n":"Tskhinvali","lat":42.2276,"lon":43.9686},{"n":"Tsnori","lat":41.618,"lon":45.979},{"n":"Tsqaltubo","lat":42.3286,"lon":42.5981},{"n":"Tsqneti","lat":41.6947,"lon":44.6986},{"n":"Ureki","lat":41.9956,"lon":41.7786},{"n":"Vale","lat":41.6161,"lon":42.8811},{"n":"Vani","lat":42.0841,"lon":42.5119},{"n":"Zahesi","lat":41.8246,"lon":44.7536},{"n":"Zestaponi","lat":42.1075,"lon":43.0329},{"n":"Zhinvali","lat":42.1318,"lon":44.7726},{"n":"Zugdidi","lat":42.5088,"lon":41.8709}];
 const ELEVP={high:2300,mountain:1300,hilly:600,lowland:120};
@@ -513,7 +579,7 @@ function setAgg(m){state.aggMethod=m;document.querySelectorAll('.aggbtn').forEac
 
 function recomputeOverall(){
   if(!data.length)return;
-  data.forEach(rec=>rec.days.forEach(d=>{
+  data.forEach(rec=>(rec.days||[]).forEach(d=>{
     if(state.aggMethod==='max'){d.overall=Math.max(d.flood,d.land,d.aval,d.heat,d.wind,d.fire);}
     else{let s=0;HAZ_KEYS.forEach((k,i)=>s+=state.weights[i]*d[k]);d.overall=s;}
   }));
@@ -550,39 +616,157 @@ function buildDays(u, R){
   const ter=(R&&R.elevation!=null)?terrainFromElev(R.elevation):u.tGuess;
   const elev=(R&&R.elevation!=null)?R.elevation:ELEVP[ter];
   const today=new Date(); today.setHours(0,0,0,0);
-  const days=[];
-  for(let fd=0;fd<7;fd++){
-    let precip,precip3,snow,tmax,wind,date;
-    if(R&&R.daily){const d=R.daily, idx=fd+2;
-      precip=(d.precipitation_sum||[])[idx]??0;
-      precip3=precip+((d.precipitation_sum||[])[idx-1]??0)+((d.precipitation_sum||[])[idx-2]??0);
-      snow=(d.snowfall_sum||[])[idx]??0; tmax=(d.temperature_2m_max||[])[idx]??0; wind=(d.wind_speed_10m_max||[])[idx]??0;
-      date=(d.time||[])[idx];
-    }else{const w=synthWx(u.lat,u.lon,ter,fd);
+  // past_days=9 gives indices 0-8 = 9 days ago..yesterday, index 9 = today, 9-15 = forecast
+  // We build 14 slots: 7 history (indices 2-8) + 7 forecast (indices 9-15)
+  const PAST_OFF=9; // index in API array where "today" sits
+  const allDays=[];
+  for(let slot=0;slot<14;slot++){
+    // slot 0-6 = history (day -7..-1), slot 7-13 = forecast (day 0..+6)
+    const dayOffset = slot - 7; // -7..+6 relative to today
+    const apiIdx = PAST_OFF + dayOffset;
+    let precip=0,precip3=0,snow=0,tmax=20,wind=10,date;
+    if(R&&R.daily){const d=R.daily;
+      precip=(d.precipitation_sum||[])[apiIdx]??0;
+      precip3=precip+((d.precipitation_sum||[])[apiIdx-1]??0)+((d.precipitation_sum||[])[apiIdx-2]??0);
+      snow=(d.snowfall_sum||[])[apiIdx]??0;
+      tmax=(d.temperature_2m_max||[])[apiIdx]??0;
+      wind=(d.wind_speed_10m_max||[])[apiIdx]??0;
+      date=(d.time||[])[apiIdx];
+    }else{
+      const synDay=Math.max(0,dayOffset);
+      const w=synthWx(u.lat,u.lon,ter,synDay);
       precip=w.precip; snow=w.snow; tmax=w.tmax; wind=w.wind;
-      precip3=precip+synthWx(u.lat,u.lon,ter,fd-1).precip+synthWx(u.lat,u.lon,ter,fd-2).precip;
-      date=new Date(today.getTime()+fd*86400000).toISOString().slice(0,10);
+      precip3=precip+synthWx(u.lat,u.lon,ter,Math.max(0,synDay-1)).precip+synthWx(u.lat,u.lon,ter,Math.max(0,synDay-2)).precip;
+      date=new Date(today.getTime()+dayOffset*86400000).toISOString().slice(0,10);
     }
-    days.push({...calcRisks(ter,u.c,precip,precip3,snow,tmax,wind), date, wx:{precip,precip3,snow,tmax,wind}});
+    allDays.push({...calcRisks(ter,u.c,precip,precip3,snow,tmax,wind), date, wx:{precip,precip3,snow,tmax,wind}, isPast:dayOffset<0});
   }
-  return {ter,elev,days};
+  // days[0-6] = history, days[7-13] = forecast → we expose all 14 but UI selects range
+  return {ter,elev,days:allDays};
+}
+
+/* ---------- ამინდი fetch (shared) ---------- */
+async function fetchWeather(pts){
+  const size=30, acc=[];
+  for(let i=0;i<pts.length;i+=size){
+    const ch=pts.slice(i,i+size);
+    const lat=ch.map(u=>u.lat.toFixed(4)).join(','), lon=ch.map(u=>u.lon.toFixed(4)).join(',');
+    const rawUrl=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}`+
+      `&daily=precipitation_sum,temperature_2m_max,wind_speed_10m_max,snowfall_sum`+
+      `&past_days=9&forecast_days=7&timezone=Asia%2FTbilisi`;
+    let res=await fetch(rawUrl).catch(()=>null);
+    if(!res||!res.ok){const proxy=`https://corsproxy.io/?`+encodeURIComponent(rawUrl);res=await fetch(proxy);}
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    const json=await res.json(); acc.push(...(Array.isArray(json)?json:[json]));
+  }
+  return acc;
+}
+
+/* ---------- საზღვრების toggle ---------- */
+async function setBndMode(mode){
+  if(state.bndMode===mode) return;
+  state.bndMode=mode;
+  document.getElementById('bnd-adm2').classList.toggle('active', mode==='adm2');
+  document.getElementById('bnd-adm1').classList.toggle('active', mode==='adm1');
+
+  const cache = mode==='adm2' ? cacheADM2 : cacheADM1;
+  if(cache.data){
+    // Already loaded — just switch
+    data=cache.data; recByName=cache.recByName; activeGeo=cache.geo;
+    buildLayer(); recomputeOverall(); render();
+    updateSrcNote();
+    return;
+  }
+  // Need to load ADM1 (REGIONS is always embedded)
+  document.getElementById('load').classList.remove('hidden');
+  setLoad(mode==='adm1'?'რეგიონების ჩატვირთვა…':'მუნიციპალიტეტების ჩატვირთვა…');
+
+  let munis;
+  if(mode==='adm1'){
+    activeGeo=REGIONS; FALLBACK=true;
+    munis=REGIONS.features.map((f,i)=>{
+      const [lat,lon]=featCentroid(f.geometry); const nm=nearestMuni(lat,lon);
+      f.__id=i;
+      return {id:i, n:f.properties.name_ka, r:'რეგიონი (ADM1)', lat, lon,
+        c:(lon<42.05&&lat>41.5&&lat<42.7)?1:0, tGuess:(nm.d<1.2?nm.m.t:'mountain'), isRegion:true};
+    });
+  } else {
+    // ADM2: use already-fetched boundaries if available
+    if(!boundaries){
+      for(const u of BND_URLS){
+        try{const r=await fetch(u);if(!r.ok)continue;const gj=await r.json();if(gj&&gj.features&&gj.features.length){boundaries=gj;break;}}catch(e){}
+      }
+    }
+    if(boundaries){
+      FALLBACK=false; activeGeo=boundaries;
+      munis=boundaries.features.map((f,i)=>{
+        const [lat,lon]=featCentroid(f.geometry); const nm=nearestMuni(lat,lon);
+        f.__id=i;
+        return {id:i, n:nm.d<0.30?nm.m.n:(f.properties.shapeName||('ერთეული '+i)), r:nm.d<0.30?nm.m.r:'—',
+          lat, lon, c:(lon<42.05&&lat>41.5&&lat<42.7)?1:0, tGuess:(nm.d<0.6?nm.m.t:'mountain')};
+      });
+    } else {
+      // ADM2 unavailable — silently fall back to ADM1
+      state.bndMode='adm1'; setBndMode('adm1'); return;
+    }
+  }
+
+  const vills=SETTLE.map((s,k)=>{const nm=nearestMuni(s.lat,s.lon);
+    return {vid:k, n:s.n, lat:s.lat, lon:s.lon, host:nm.m.n, r:nm.m.r,
+      c:(s.lon<42.05&&s.lat>41.5&&s.lat<42.7)?1:0, tGuess:(nm.d<0.7?nm.m.t:'hilly')};});
+
+  const pts=munis.concat(vills);
+  setLoad('პროგნოზის ჩამოტვირთვა… ('+pts.length+' წერტილი)');
+  let results=null;
+  try{ results=await fetchWeather(pts); DEMO=false; }
+  catch(e){ DEMO=true; console.warn('live fetch → demo:', e&&e.message); }
+
+  const newData=munis.map((u,i)=>{const b=buildDays(u, results?results[i]:null); return {muni:{...u,t:b.ter,elev:b.elev}, days:b.days};});
+  const newRecByName={}; newData.forEach(rec=>newRecByName[rec.muni.id]=rec);
+  const newSettleP=vills.map((u,j)=>{
+    const b=buildDays(u, results?results[munis.length+j]:null);
+    return {n:u.n, lat:u.lat, lon:u.lon,
+      rec:{muni:{n:u.n, r:u.host+(u.r&&u.r!=='—'?' · '+u.r:''), lat:u.lat, lon:u.lon, t:b.ter, elev:b.elev, c:u.c, isVillage:true}, days:b.days}};
+  });
+
+  // Save to cache
+  cache.data=newData; cache.geo=activeGeo; cache.recByName=newRecByName;
+
+  data=newData; recByName=newRecByName; SETTLEP=newSettleP;
+  document.getElementById('stamp').textContent=(DEMO?'დემო · ':'')+new Date().toLocaleString('ka-GE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+  updateSrcNote();
+  buildLayer(); recomputeOverall(); render();
+  document.getElementById('load').classList.add('hidden');
+}
+
+function updateSrcNote(){
+  const muniCount=data.length;
+  document.getElementById('srcnote').innerHTML=
+    (DEMO?'⚠ დემო რეჟიმი — live API მიუწვდომელია. <b>GitHub Pages-ზე live მონაცემები მუშაობს.</b><br>':'')
+    +(state.bndMode==='adm1'
+      ? '🏛 რეგიონები ADM1 (embedded) · '+muniCount+' · <a href="#" onclick="setBndMode('adm2');return false;" style="color:var(--accent)">გადართვა ADM2-ზე</a>'
+      : (FALLBACK
+          ? '⚠ ADM2 ვერ ჩაიტვირთა — ADM1 რეჟიმი'
+          : '🗺 geoBoundaries ADM2 (CC BY 4.0) · '+muniCount+' მუნ.'))
+    +' · დასახლება: '+SETTLE.length;
 }
 
 /* ---------- data fetch ---------- */
 async function loadAll(){
   document.getElementById('load').classList.remove('hidden');
   setLoad('საზღვრების ჩამოტვირთვა…');
-  // 1) საზღვრები (geoBoundaries, runtime)
+  // 1) ADM2 საზღვრები
   if(!boundaries){
     for(const u of BND_URLS){
       try{const r=await fetch(u);if(!r.ok)continue;const gj=await r.json();if(gj&&gj.features&&gj.features.length){boundaries=gj;break;}}catch(e){}
     }
   }
   const feats=boundaries?boundaries.features:null;
-  // 2) აქტიური პოლიგონები: ADM2 მუნიციპალიტეტები (host) ან ADM1 რეგიონები (embedded fallback)
   let munis;
   if(feats){
-    FALLBACK=false; activeGeo=boundaries;
+    FALLBACK=false; activeGeo=boundaries; state.bndMode='adm2';
+    document.getElementById('bnd-adm2').classList.add('active');
+    document.getElementById('bnd-adm1').classList.remove('active');
     munis=feats.map((f,i)=>{
       const [lat,lon]=featCentroid(f.geometry); const nm=nearestMuni(lat,lon);
       f.__id=i;
@@ -590,7 +774,9 @@ async function loadAll(){
         lat, lon, c:(lon<42.05&&lat>41.5&&lat<42.7)?1:0, tGuess:(nm.d<0.6?nm.m.t:'mountain')};
     });
   }else{
-    FALLBACK=true; activeGeo=REGIONS;
+    FALLBACK=true; activeGeo=REGIONS; state.bndMode='adm1';
+    document.getElementById('bnd-adm1').classList.add('active');
+    document.getElementById('bnd-adm2').classList.remove('active');
     munis=REGIONS.features.map((f,i)=>{
       const [lat,lon]=featCentroid(f.geometry); const nm=nearestMuni(lat,lon);
       f.__id=i;
@@ -598,31 +784,24 @@ async function loadAll(){
         c:(lon<42.05&&lat>41.5&&lat<42.7)?1:0, tGuess:(nm.d<1.2?nm.m.t:'mountain'), isRegion:true};
     });
   }
-  // 3) დასახლებების ერთეულები (საკუთარი კოორდინატი/პროგნოზი)
+
   const vills=SETTLE.map((s,k)=>{const nm=nearestMuni(s.lat,s.lon);
     return {vid:k, n:s.n, lat:s.lat, lon:s.lon, host:nm.m.n, r:nm.m.r,
       c:(s.lon<42.05&&s.lat>41.5&&s.lat<42.7)?1:0, tGuess:(nm.d<0.7?nm.m.t:'hilly')};});
-  // 4) ამინდი ყველა წერტილისთვის — live ან demo
+
   const pts=munis.concat(vills);
   setLoad('პროგნოზის ჩამოტვირთვა… ('+pts.length+' წერტილი)');
   let results=null;
-  try{
-    const size=30, acc=[];
-    for(let i=0;i<pts.length;i+=size){
-      const ch=pts.slice(i,i+size);
-      const lat=ch.map(u=>u.lat.toFixed(4)).join(','), lon=ch.map(u=>u.lon.toFixed(4)).join(',');
-      const url=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}`+
-        `&daily=precipitation_sum,temperature_2m_max,wind_speed_10m_max,snowfall_sum`+
-        `&past_days=2&forecast_days=7&timezone=Asia%2FTbilisi`;
-      const res=await fetch(url); if(!res.ok)throw new Error('HTTP '+res.status);
-      const json=await res.json(); acc.push(...(Array.isArray(json)?json:[json]));
-    }
-    results=acc; DEMO=false;
-  }catch(e){ DEMO=true; console.warn('live fetch დაიბლოკა → demo რეჟიმი:', e&&e.message); }
+  try{ results=await fetchWeather(pts); DEMO=false; }
+  catch(e){ DEMO=true; console.warn('live fetch → demo:', e&&e.message); }
 
-  // 5) ჩანაწერების აგება
   data=munis.map((u,i)=>{const b=buildDays(u, results?results[i]:null); return {muni:{...u,t:b.ter,elev:b.elev}, days:b.days};});
   recByName={}; data.forEach(rec=>recByName[rec.muni.id]=rec);
+
+  // Save to cache
+  const cache=feats?cacheADM2:cacheADM1;
+  cache.data=data; cache.geo=activeGeo; cache.recByName={...recByName};
+
   SETTLEP=vills.map((u,j)=>{
     const b=buildDays(u, results?results[munis.length+j]:null);
     return {n:u.n, lat:u.lat, lon:u.lon,
@@ -630,10 +809,7 @@ async function loadAll(){
   });
 
   document.getElementById('stamp').textContent=(DEMO?'დემო · ':'')+new Date().toLocaleString('ka-GE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
-  document.getElementById('srcnote').innerHTML =
-    (DEMO?'⚠ live პროგნოზი დაბლოკილია (preview sandbox) — <b>დემო მონაცემები</b>. რეალურისთვის გახსენი ბრაუზერში/host-ზე.<br>':'')
-    +(FALLBACK?'საზღვრები: ADM1 რეგიონები (embedded) · '+munis.length+' · host-ზე ჩაიტვირთება ADM2 მუნიციპალიტეტები':'საზღვრები: geoBoundaries ADM2 (CC BY 4.0) · '+munis.length+' მუნ.')
-    +' · დასახლება: '+SETTLE.length+' (საკ. პროგნოზით)';
+  updateSrcNote();
   buildLayer(); recomputeOverall(); render();
   document.getElementById('load').classList.add('hidden');
 }
@@ -645,7 +821,7 @@ function refreshSettlements(){
   const b=map.getBounds(); settleGroup=L.layerGroup();
   SETTLEP.forEach(s=>{
     if(!b.contains([s.lat,s.lon]))return;
-    const v=s.rec?s.rec.days[state.day][state.hazard]||0:0;
+    const slotR=getSlot?getSlot():7;const v=s.rec&&s.rec.days[slotR]?s.rec.days[slotR][state.hazard]||0:0;
     const mk=L.circleMarker([s.lat,s.lon],{radius:4.5,fillColor:bandColor(v),color:'#fff',weight:1,fillOpacity:.95});
     mk.bindTooltip(`${s.n} · ${Math.round(v)}`,{direction:'top',className:'lt'});
     mk.on('click',()=>{if(s.rec)selectMuni(s.rec);});
@@ -656,7 +832,7 @@ function refreshSettlements(){
 
 
 /* ---------- ფენის აგება/სტილი ---------- */
-function styleFn(f){const rec=recByName[f.__id];const v=rec?rec.days[state.day][state.hazard]||0:0;return{fillColor:bandColor(v),weight:1,color:'#0a0e16',fillOpacity:0.8,opacity:1};}
+function styleFn(f){const rec=recByName[f.__id];const dy=getSlot?getSlot():7;const v=rec&&rec.days[dy]?rec.days[dy][state.hazard]||0:0;const c=bandColor(v);const solid=state.fillMode==='solid';return{fillColor:c,weight:solid?1:2,color:solid?'#0a0e16':c,fillOpacity:solid?0.75:0.13,opacity:1};}
 function buildLayer(){
   if(geoLayer){map.removeLayer(geoLayer);geoLayer=null;}
   if(!activeGeo)return;
@@ -668,7 +844,7 @@ function buildLayer(){
 }
 function styleLayer(){
   if(geoLayer){geoLayer.setStyle(styleFn);
-    geoLayer.eachLayer(l=>{const rec=recByName[l.feature.__id];if(rec){const v=rec.days[state.day][state.hazard]||0;l.bindTooltip(`${rec.muni.n} · ${Math.round(v)}`,{sticky:true,className:'lt'});}});}
+    geoLayer.eachLayer(l=>{const rec=recByName[l.feature.__id];if(rec){const dy2=getSlot?getSlot():7;const v=rec.days[dy2]?rec.days[dy2][state.hazard]||0:0;l.bindTooltip(`${rec.muni.n} · ${Math.round(v)}`,{sticky:true,className:'lt'});}});}
 }
 
 /* ---------- render ---------- */
@@ -677,15 +853,20 @@ function dateLabel(iso){
   const days=['კვ','ორ','სამ','ოთხ','ხუთ','პარ','შაბ'];
   const today=new Date(); today.setHours(0,0,0,0);
   const diff=Math.round((d-today)/86400000);
-  const pre = diff===0?'დღეს · ':diff===1?'ხვალ · ':'';
+  let pre='';
+  if(diff===0) pre='დღეს · ';
+  else if(diff===1) pre='ხვალ · ';
+  else if(diff===-1) pre='გუშინ · ';
+  else if(diff<-1) pre=`${Math.abs(diff)} დღის წინ · `;
   return pre + d.toLocaleDateString('ka-GE',{day:'2-digit',month:'short'}) + ` (${days[d.getDay()]})`;
 }
 
+function getSlot(){return state.timeMode==='history'?state.day:state.day+7;}
 function render(){
   if(!data.length)return;
-  const h=state.hazard, dy=state.day;
+  const h=state.hazard, dy=getSlot();
   // day label
-  document.getElementById('dlabel').textContent=dateLabel(data[0].days[dy].date);
+  document.getElementById('dlabel').textContent=dateLabel(data[0].days[dy]?data[0].days[dy].date:'');
   document.getElementById('legTitle').textContent=(h==='overall'?('ჯამური '+(state.aggMethod==='ahp'?'(AHP)':'(max)')):HAZ_KA[h])+' — დონე';
 
   // გეომეტრიის შეფერვა მიმდინარე საფრთხე/დღით
@@ -695,7 +876,7 @@ function render(){
   // bands summary
   const bands=[{nm:'ექსტრემალური',c:'--r-ext',lo:80},{nm:'მაღალი',c:'--r-high',lo:60},{nm:'ამაღლებული',c:'--r-elev',lo:40},{nm:'ზომიერი',c:'--r-mod',lo:20},{nm:'დაბალი',c:'--r-low',lo:0}];
   const cnt=bands.map(b=>0);
-  data.forEach(r=>{const v=r.days[dy][h]||0; for(let i=0;i<bands.length;i++){if(v>=bands[i].lo){cnt[i]++;break;}}});
+  data.forEach(r=>{const v=(r.days[dy]&&r.days[dy][h])||0; for(let i=0;i<bands.length;i++){if(v>=bands[i].lo){cnt[i]++;break;}}});
   const max=Math.max(...cnt,1);
   document.getElementById('bands').innerHTML=bands.map((b,i)=>
     `<div class="band"><span class="sw" style="background:var(${b.c})"></span><span class="nm">${b.nm}</span>
@@ -703,9 +884,9 @@ function render(){
      <span class="ct">${cnt[i]}</span></div>`).join('');
 
   // top list
-  const ranked=[...data].sort((a,b)=>(b.days[dy][h]||0)-(a.days[dy][h]||0)).slice(0,8);
+  const ranked=[...data].sort((a,b)=>((b.days[dy]&&b.days[dy][h])||0)-((a.days[dy]&&a.days[dy][h])||0)).slice(0,8);
   document.getElementById('toplist').innerHTML=ranked.map(r=>{
-    const v=r.days[dy][h]||0;
+    const v=(r.days[dy]&&r.days[dy][h])||0;
     return `<div class="trow" onclick="selectByName('${r.muni.n}')">
       <span class="pip" style="background:${bandColor(v)}"></span>
       <span class="nm">${r.muni.n}<div class="rg">${r.muni.r}</div></span>
@@ -716,14 +897,10 @@ function render(){
 }
 
 function selectByName(n){const r=data.find(x=>x.muni.n===n); if(r)selectMuni(r);}
-function selectMuni(rec){
-  selected=rec; renderDetail(rec);
-  map.setView([rec.muni.lat,rec.muni.lon], map.getZoom()<8?8:map.getZoom(),{animate:true});
-  if(window.innerWidth<=860) document.querySelector('aside').classList.add('open');
-}
+// selectMuni defined above with news integration
 
 function renderDetail(rec){
-  const dy=state.day, d=rec.days[dy];
+  const dy=getSlot?getSlot():7, d=rec.days[dy]||rec.days[7];
   const order=[['flood','🌊'],['land','⛰'],['aval','❄'],['heat','🔥'],['wind','🌬'],['fire','🔥']];
   const rows=order.map(([k,ic])=>{
     const v=d[k]||0;
@@ -776,6 +953,111 @@ function renderAHP(){
      <div class="crt">${ok?'თანმიმდევრული შეფასებები (CR < 0.10)':'არათანმიმდევრული — გადახედე წყვილებს (CR ≥ 0.10)'}<br>λmax = ${(state.lmax||6).toFixed(3)} · n = 6 · RI = 1.24</div>`;
 }
 
+
+/* ---------- fill mode ---------- */
+function setFillMode(m){
+  state.fillMode=m;
+  document.querySelectorAll('.fillbtn').forEach(b=>b.classList.toggle('active',b.id==='fill-'+m));
+  if(geoLayer) geoLayer.setStyle(styleFn);
+}
+
+/* ---------- time mode ---------- */
+function setTimeMode(m){
+  state.timeMode=m;
+  document.getElementById('tm-hist').classList.toggle('active',m==='history');
+  document.getElementById('tm-fore').classList.toggle('active',m==='forecast');
+  state.day=0;
+  document.getElementById('dayr').value=0;
+  render();
+}
+
+/* ---------- news: Claude API ---------- */
+async function fetchNews(){
+  const q=document.getElementById('news-q').value.trim();
+  if(!q){alert('ჩაწერეთ საძიებო სიტყვა');return;}
+  const box=document.getElementById('news-result');
+  box.innerHTML='<div class="nspin">ქართულ ახალ ამბებს ვეძებ…</div>';
+
+  // Build context from selected municipality if any
+  let muniCtx='';
+  if(window._selected){
+    const rec=window._selected;
+    const dy=getSlot();
+    const d=rec.days[dy];
+    muniCtx=`\nმიმდინარე პროგნოზი (${rec.muni.n}): წყალდიდობა ${Math.round(d.flood)}/100, მეწყერი ${Math.round(d.land)}/100, სიცხე ${Math.round(d.heat)}/100, ქარი ${Math.round(d.wind)}/100, ნალექი ${d.wx.precip.toFixed(1)}mm.`;
+  }
+
+  const prompt=`შენ ხარ GeoHazard-ის ასისტენტი — საქართველოს საფრთხის პროგნოზული სისტემა.
+
+მომხმარებელი ეძებს: "${q}"${muniCtx}
+
+გთხოვ:
+1. ვებ-ძიებით მოძებნე ბოლო 7-14 დღის ქართული სიახლეები ამ თემაზე (გამოიყენე search ინსტრუმენტი).
+2. მოიყვანე 3-5 კონკრეტული შეტყობინება (წყარო, თარიღი, შინაარსი 2-3 წინადადებით).
+3. შეადარე ამ ინფორმაციას GeoHazard-ის პროგნოზს: ემთხვევა თუ განსხვავდება?
+4. მოკლე დასკვნა.
+
+გამოიყენე ქართული ენა. ფორმატი: JSON მასივი ასეთი სტრუქტურით:
+{
+  "items": [
+    {"title":"სათაური","source":"წყარო","date":"თარიღი","summary":"შინაარსი","match":"hi|mod|low","matchLabel":"ემთხვევა|ნაწილობრივ|განსხვავდება"}
+  ],
+  "conclusion": "მოკლე დასკვნა"
+}
+დააბრუნე მხოლოდ JSON, სხვა ტექსტის გარეშე.`;
+
+  try{
+    const resp=await fetch("https://api.anthropic.com/v1/messages",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        model:"claude-sonnet-4-20250514",
+        max_tokens:1500,
+        tools:[{type:"web_search_20250305",name:"web_search"}],
+        messages:[{role:"user",content:prompt}]
+      })
+    });
+    if(!resp.ok) throw new Error("API "+resp.status);
+    const data=await resp.json();
+    // extract text blocks
+    const txt=(data.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("");
+    let parsed;
+    try{
+      const clean=txt.replace(/```json|```/g,"").trim();
+      parsed=JSON.parse(clean);
+    }catch(e){
+      // fallback: show raw text
+      box.innerHTML=`<div class="news-item"><div class="ni-txt" style="white-space:pre-wrap">${txt}</div></div>`;
+      return;
+    }
+    const items=(parsed.items||[]);
+    let out=items.map(it=>`
+      <div class="news-item">
+        <div class="ni-head">📄 ${it.title||''}</div>
+        <div class="ni-src">${it.source||''} · ${it.date||''}</div>
+        <div class="ni-txt">${it.summary||''}</div>
+        <span class="ni-match ${it.match||'mod'}">${it.matchLabel||'ნაწილობრივ'}</span>
+      </div>`).join("");
+    if(parsed.conclusion){
+      out+=`<div class="news-item" style="border-color:var(--accent)"><div class="ni-head">💡 დასკვნა</div><div class="ni-txt">${parsed.conclusion}</div></div>`;
+    }
+    box.innerHTML=out||'<div style="color:var(--muted);font-size:12px;padding:8px 0">შედეგი ვერ მოიძებნა</div>';
+    box.innerHTML+='<div class="news-note">წყარო: ვებ-ძიება Claude Sonnet-ის საშუალებით. შეამოწმე ორიგინალი სტატიები.</div>';
+  }catch(e){
+    box.innerHTML=`<div style="color:var(--r-high);font-size:12px;padding:8px 0">შეცდომა: ${e.message}<br><small style="color:var(--muted)">API-ს გამოსაყენებლად GitHub Pages-ზე გახსენი (ან შეამოწმე API key-ი).</small></div>`;
+  }
+}
+
+/* ---------- auto-fill search from selected muni ---------- */
+function selectMuni(rec){
+  selected=rec; window._selected=rec; renderDetail(rec);
+  // auto-populate news search
+  const q=document.getElementById('news-q');
+  if(q && rec.muni.n) q.value=rec.muni.n+' წყალდიდობა OR მეწყერი OR გვალვა';
+  map.setView([rec.muni.lat,rec.muni.lon], map.getZoom()<8?8:map.getZoom(),{animate:true});
+  if(window.innerWidth<=860) document.querySelector('aside').classList.add('open');
+}
+
 /* ---------- init ---------- */
 function init(){
   // hazard buttons
@@ -793,6 +1075,8 @@ function init(){
     `<button class="bm${i===0?' active':''}" onclick="setBasemap('${k}')">${k}</button>`).join('');
   // day slider
   document.getElementById('dayr').addEventListener('input',e=>{stopPlay(); state.day=+e.target.value; render();});
+  // initial button states
+  document.getElementById('fill-border').classList.add('active');
   // settlements refresh on map move/zoom
   map.on('zoomend moveend', refreshSettlements);
   // AHP init
@@ -811,7 +1095,7 @@ function toggleVillages(){ showVillages=!showVillages; document.getElementById('
   refreshSettlements(); }
 function setBasemap(name){ if(baseTile)map.removeLayer(baseTile); baseTile=window.__bases[name]; baseTile.addTo(map);
   document.querySelectorAll('.bm').forEach(b=>b.classList.toggle('active',b.textContent===name)); }
-window.setHaz=setHaz; window.selectByName=selectByName;
+window.setHaz=setHaz; window.selectByName=selectByName; window.fetchNews=fetchNews; window.setFillMode=setFillMode; window.setTimeMode=setTimeMode; window.setBndMode=setBndMode;
 window.loadPreset=loadPreset; window.setSlider=setSlider; window.setAgg=setAgg; window.loadAll=loadAll;
 window.stepDay=stepDay; window.togglePlay=togglePlay; window.toggleVillages=toggleVillages; window.setBasemap=setBasemap;
 init();
