@@ -488,10 +488,10 @@ const MUNI = [
 
 /* ============ რელიეფის კოეფიციენტები ============ */
 const TER = {
-  high:    {flood:0.80, land:1.30, aval:1.00},
-  mountain:{flood:0.95, land:1.20, aval:0.55},
-  hilly:   {flood:1.00, land:0.95, aval:0.10},
-  lowland: {flood:1.25, land:0.55, aval:0.00},
+  high:    {flood:0.80, land:1.30, aval:1.00, hail:0.70},
+  mountain:{flood:0.95, land:1.20, aval:0.55, hail:1.10},
+  hilly:   {flood:1.00, land:0.95, aval:0.10, hail:1.25},
+  lowland: {flood:1.25, land:0.55, aval:0.00, hail:1.00},
 };
 
 /* ============ საფრთხეები ============ */
@@ -545,29 +545,57 @@ function bandColor(v){
 function getCss(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim();}
 
 /* ---------- risk model ---------- */
-function calcRisks(ter, coast, precip, precip3, snow, tmax, wind){
+function calcRisks(ter, coast, precip, precip3, snow, tmax, wind,
+                   gusts=wind, cape=0, soilMoist=0.2, freezeLevel=3000){
   const T = TER[ter];
-  // წყალდიდობა — დღიური ნალექი
-  let flood = piece(precip, [[0,0],[10,15],[30,50],[60,80],[120,100]]) * T.flood + (coast?5:0);
-  // მეწყერი — 3-დღიანი დაგროვება (ნიადაგის გაჯერება)
-  let land = piece(precip3, [[0,0],[20,16],[60,68],[120,98]]) * T.land;
-  // ზვავი — თოვა + ქარი (მხოლოდ მაღალმთა)
+
+  // ── წყალდიდობა ─────────────────────────────────────────────────────────
+  // ნალექი + ნიადაგის გაჯერება (soil moisture) აძლიერებს runoff-ს
+  const soilBoost = piece(soilMoist, [[0,1.0],[0.2,1.0],[0.35,1.25],[0.45,1.55],[0.5,1.8]]);
+  let flood = piece(precip, [[0,0],[10,15],[30,50],[60,80],[120,100]]) * T.flood * soilBoost
+              + (coast?5:0);
+
+  // ── მეწყერი ─────────────────────────────────────────────────────────────
+  // 3-დღიანი ნალექი × ნიადაგის გაჯერება — ორივე პირდაპირ გვჭირდება
+  const soilLand = piece(soilMoist, [[0,0.8],[0.25,1.0],[0.40,1.4],[0.50,1.9]]);
+  let land = piece(precip3, [[0,0],[20,16],[60,68],[120,98]]) * T.land * soilLand;
+
+  // ── ზვავი ────────────────────────────────────────────────────────────────
+  // გაყინვის სიმაღლე: დაბლა = მეტი თოვა დაბალ სიმაღლეებზე = მეტი ზვავი
   let aval = 0;
-  if(T.aval>0){
+  if(T.aval > 0){
     aval = piece(snow, [[0,0],[5,15],[20,60],[50,99]]);
-    if(wind>30) aval += Math.min(20,(wind-30)*0.5);
-    aval *= T.aval;
+    if(gusts > 30) aval += Math.min(25,(gusts-30)*0.6);  // გუსტი ქარი ზვავს ტრიგერავს
+    // დაბალი გაყინვის სიმაღლე = სველი, მძიმე თოვლი = უფრო სახიფათო
+    const freezeBoost = freezeLevel < 1500 ? 1.4 : freezeLevel < 2000 ? 1.2 : 1.0;
+    aval *= T.aval * freezeBoost;
   }
-  // სიცხე
+
+  // ── სიცხე ────────────────────────────────────────────────────────────────
   let heat = piece(tmax, [[20,0],[28,16],[32,40],[36,76],[42,100]]);
-  // ქარი
-  let w = piece(wind, [[0,0],[30,21],[50,51],[75,91],[100,100]]) + (coast?4:0);
-  // ხანძარი — სიცხე × სიმშრალე × ქარი
-  let dry = precip3<2?1 : precip3<10?0.6 : precip3<25?0.3 : 0.1;
-  let fire = clamp(clamp((tmax-20)*4,0,80)*dry + clamp(wind*0.3,0,20)*dry);
-  flood=clamp(flood); land=clamp(land); aval=clamp(aval); heat=clamp(heat); w=clamp(w); fire=clamp(fire);
-  const overall = Math.max(flood,land,aval,heat,w,fire);
-  return {flood,land,aval,heat,wind:w,fire,overall};
+
+  // ── ქარი ─────────────────────────────────────────────────────────────────
+  // საშუალო ქარი + გუსტის ბონუსი (გუსტი ყველაზე დამანგრეველია)
+  const gustScore = piece(gusts, [[0,0],[40,10],[70,25],[100,35],[150,40]]);
+  let w = piece(wind, [[0,0],[30,21],[50,51],[75,91],[100,100]]) + gustScore + (coast?4:0);
+
+  // ── ხანძარი ──────────────────────────────────────────────────────────────
+  // სიმშრალე ნიადაგის ტენიანობიდანაც (soil moisture < 0.1 = ძალიან მშრალი)
+  const soilDry = soilMoist < 0.08 ? 1.5 : soilMoist < 0.15 ? 1.2 : soilMoist < 0.25 ? 0.9 : 0.5;
+  let dry = precip3 < 2 ? soilDry : precip3 < 10 ? soilDry*0.7 : precip3 < 25 ? 0.3 : 0.1;
+  let fire = clamp(clamp((tmax-20)*4,0,80)*dry + clamp(gusts*0.35,0,25)*dry);
+
+  // ── სეტყვა / კონვექტური საფრთხე (CAPE) ──────────────────────────────────
+  // CAPE (J/kg): >500 = ზომიერი, >1500 = ძლიერი, >3000 = ექსტრემალური
+  const capeFactor = piece(cape, [[0,0],[200,5],[500,20],[1000,45],[2000,70],[3500,90],[5000,100]]);
+  // ქარი კონვექციას ტრიგერავს — გუსტი > 40 კმ/სთ
+  const windConv = gusts > 40 ? Math.min(15,(gusts-40)*0.3) : 0;
+  let hail = clamp((capeFactor + windConv) * (T.hail||1.0));
+
+  flood=clamp(flood); land=clamp(land); aval=clamp(aval);
+  heat=clamp(heat); w=clamp(w); fire=clamp(fire); hail=clamp(hail);
+  const overall = Math.max(flood,land,aval,heat,w,fire,hail);
+  return {flood,land,aval,heat,wind:w,fire,hail,overall};
 }
 
 /* ---------- AHP კალიბრაცია ---------- */
@@ -634,22 +662,29 @@ function buildDays(u, R){
     // slot 0-6 = history (day -7..-1), slot 7-13 = forecast (day 0..+6)
     const dayOffset = slot - 7; // -7..+6 relative to today
     const apiIdx = PAST_OFF + dayOffset;
-    let precip=0,precip3=0,snow=0,tmax=20,wind=10,date;
+    let precip=0,precip3=0,snow=0,tmax=20,wind=10,gusts=10,precipProb=50,cape=0,soilMoist=0.2,freezeLevel=3000,date;
     if(R&&R.daily){const d=R.daily;
       precip=(d.precipitation_sum||[])[apiIdx]??0;
       precip3=precip+((d.precipitation_sum||[])[apiIdx-1]??0)+((d.precipitation_sum||[])[apiIdx-2]??0);
       snow=(d.snowfall_sum||[])[apiIdx]??0;
       tmax=(d.temperature_2m_max||[])[apiIdx]??0;
       wind=(d.wind_speed_10m_max||[])[apiIdx]??0;
+      gusts=(d.wind_gusts_10m_max||[])[apiIdx]??wind;
+      precipProb=(d.precipitation_probability_max||[])[apiIdx]??50;
+      cape=(d.cape||[])[apiIdx]??0;
+      soilMoist=(d.soil_moisture_0_to_7cm||[])[apiIdx]??0.2;
+      freezeLevel=(d.freezing_level_height||[])[apiIdx]??3000;
       date=(d.time||[])[apiIdx];
     }else{
       const synDay=Math.max(0,dayOffset);
       const w=synthWx(u.lat,u.lon,ter,synDay);
       precip=w.precip; snow=w.snow; tmax=w.tmax; wind=w.wind;
       precip3=precip+synthWx(u.lat,u.lon,ter,Math.max(0,synDay-1)).precip+synthWx(u.lat,u.lon,ter,Math.max(0,synDay-2)).precip;
+      gusts=wind*1.4|0; precipProb=precip>2?60:20; cape=tmax>28?500+tmax*20:0;
+      soilMoist=Math.min(0.5,precip3/60+0.15); freezeLevel=ter==='high'?1800:ter==='mountain'?2500:3500;
       date=new Date(today.getTime()+dayOffset*86400000).toISOString().slice(0,10);
     }
-    allDays.push({...calcRisks(ter,u.c,precip,precip3,snow,tmax,wind), date, wx:{precip,precip3,snow,tmax,wind}, isPast:dayOffset<0});
+    allDays.push({...calcRisks(ter,u.c,precip,precip3,snow,tmax,wind,gusts,cape,soilMoist,freezeLevel), date, wx:{precip,precip3,snow,tmax,wind,gusts,precipProb,cape,soilMoist,freezeLevel}, isPast:dayOffset<0});
   }
   // days[0-6] = history, days[7-13] = forecast → we expose all 14 but UI selects range
   return {ter,elev,days:allDays};
@@ -662,7 +697,9 @@ async function fetchWeather(pts){
     const ch=pts.slice(i,i+size);
     const lat=ch.map(u=>u.lat.toFixed(4)).join(','), lon=ch.map(u=>u.lon.toFixed(4)).join(',');
     const rawUrl=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}`+
-      `&daily=precipitation_sum,temperature_2m_max,wind_speed_10m_max,snowfall_sum`+
+      `&daily=precipitation_sum,temperature_2m_max,wind_speed_10m_max,snowfall_sum,`+
+      `wind_gusts_10m_max,precipitation_probability_max,cape,`+
+      `soil_moisture_0_to_7cm,freezing_level_height`+
       `&past_days=9&forecast_days=7&timezone=Asia%2FTbilisi`;
     let res=await fetch(rawUrl).catch(()=>null);
     if(!res||!res.ok){const proxy=`https://corsproxy.io/?`+encodeURIComponent(rawUrl);res=await fetch(proxy);}
