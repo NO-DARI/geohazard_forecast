@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>GeoHazard — საქართველოს საფრთხეების პროგნოზული რუკა</title>
 <meta name="description" content="საქართველოს მუნიციპალიტეტებისა და დასახლებების მრავალსაფრთხიანი რისკების ინტერაქტიული რუკა ამინდის 7-დღიან პროგნოზზე დაყრდნობით.">
-<!-- ▼▼▼ გასაზიარებლად: შეცვალე YOURNAME შენი GitHub/ჰოსტის მისამართით (აუცილებლად აბსოლუტური https URL) ▼▼▼ -->
+<!-- ▼▼▼ გასაზიარებლად:https://no-dari.github.io/geohazard_forecast/  ▼▼▼ -->
 <meta property="og:type" content="website">
 <meta property="og:title" content="GeoHazard — პროგნოზული რისკების რუკა · საქართველო">
 <meta property="og:description" content="წყალდიდობა · მეწყერი · ზვავი · სიცხე · ქარი · ხანძარი — მუნიციპალიტეტებისა და სოფლების მიხედვით, 7-დღიანი პროგნოზით.">
@@ -671,9 +671,9 @@ function buildDays(u, R){
       wind=(d.wind_speed_10m_max||[])[apiIdx]??0;
       gusts=(d.wind_gusts_10m_max||[])[apiIdx]??wind;
       precipProb=(d.precipitation_probability_max||[])[apiIdx]??50;
-      cape=(d.cape||[])[apiIdx]??0;
-      soilMoist=(d.soil_moisture_0_to_7cm||[])[apiIdx]??0.2;
-      freezeLevel=(d.freezing_level_height||[])[apiIdx]??3000;
+      cape=(d.cape_mean||d.cape||[])[apiIdx]??0;
+      soilMoist=(d.soil_moisture_0_to_7cm_mean||d.soil_moisture_0_to_7cm||[])[apiIdx]??0.2;
+      freezeLevel=(d.freezing_level_height_mean||d.freezing_level_height||[])[apiIdx]??3000;
       date=(d.time||[])[apiIdx];
     }else{
       const synDay=Math.max(0,dayOffset);
@@ -692,19 +692,36 @@ function buildDays(u, R){
 
 /* ---------- ამინდი fetch (shared) ---------- */
 async function fetchWeather(pts){
-  const size=30, acc=[];
-  for(let i=0;i<pts.length;i+=size){
-    const ch=pts.slice(i,i+size);
-    const lat=ch.map(u=>u.lat.toFixed(4)).join(','), lon=ch.map(u=>u.lon.toFixed(4)).join(',');
-    const rawUrl=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}`+
-      `&daily=precipitation_sum,temperature_2m_max,wind_speed_10m_max,snowfall_sum,`+
-      `wind_gusts_10m_max,precipitation_probability_max,cape,`+
-      `soil_moisture_0_to_7cm,freezing_level_height`+
-      `&past_days=9&forecast_days=7&timezone=Asia%2FTbilisi`;
-    let res=await fetch(rawUrl).catch(()=>null);
-    if(!res||!res.ok){const proxy=`https://corsproxy.io/?`+encodeURIComponent(rawUrl);res=await fetch(proxy);}
-    if(!res.ok)throw new Error('HTTP '+res.status);
-    const json=await res.json(); acc.push(...(Array.isArray(json)?json:[json]));
+  // chunk=10 — პატარა batch, URL მოკლე, სანდო
+  const CHUNK=10;
+  // CAPE და soil moisture — ცალკე "hourly" endpoint-ზე კი არ არის,
+  // daily-ში soil_moisture_0_to_7cm_mean-ია სწორი სახელი (Open-Meteo v1)
+  const DAILY=[
+    'precipitation_sum','temperature_2m_max','wind_speed_10m_max',
+    'snowfall_sum','wind_gusts_10m_max','precipitation_probability_max',
+    'cape_mean','soil_moisture_0_to_7cm_mean','freezing_level_height_mean'
+  ].join(',');
+  const PROXIES=[
+    u=>u,
+    u=>`https://corsproxy.io/?${encodeURIComponent(u)}`,
+    u=>`https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+  ];
+  const acc=[];
+  for(let i=0;i<pts.length;i+=CHUNK){
+    const ch=pts.slice(i,i+CHUNK);
+    const lat=ch.map(u=>u.lat.toFixed(4)).join(',');
+    const lon=ch.map(u=>u.lon.toFixed(4)).join(',');
+    const url=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}`+
+              `&daily=${DAILY}&past_days=9&forecast_days=7&timezone=Asia%2FTbilisi`;
+    let json=null;
+    for(const proxy of PROXIES){
+      try{
+        const res=await fetch(proxy(url),{signal:AbortSignal.timeout(10000)});
+        if(res.ok){json=await res.json();break;}
+      }catch(e){continue;}
+    }
+    if(json) acc.push(...(Array.isArray(json)?json:[json]));
+    else ch.forEach(()=>acc.push(null)); // ამ chunk-ზე demo fallback
   }
   return acc;
 }
@@ -778,8 +795,12 @@ async function loadAll(){
   const pts=munis.concat(vills);
   setLoad('პროგნოზის ჩამოტვირთვა… ('+pts.length+' წერტილი)');
   let results=null;
-  try{ results=await fetchWeather(pts); DEMO=false; }
-  catch(e){ DEMO=true; console.warn('live fetch → demo:', e&&e.message); }
+  try{
+    results=await fetchWeather(pts);
+    const gotLive=results.filter(r=>r!==null).length;
+    DEMO = gotLive===0;
+    if(gotLive>0&&gotLive<results.length) console.info(`live: ${gotLive}/${results.length} წერტილი`);
+  }catch(e){ DEMO=true; console.warn('live fetch → demo:', e&&e.message); }
 
   data=munis.map((u,i)=>{const b=buildDays(u, results?results[i]:null); return {muni:{...u,t:b.ter,elev:b.elev}, days:b.days};});
   recByName={}; data.forEach(rec=>recByName[rec.muni.id]=rec);
