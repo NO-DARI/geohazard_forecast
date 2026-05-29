@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GeoHazard — საქართველოს საფრთხეების პროგნოზული რუკა</title>
+<title>GeoHazard v4 — საქართველოს საფრთხეების პროგნოზული რუკა</title>
 <meta name="description" content="საქართველოს მუნიციპალიტეტებისა და დასახლებების მრავალსაფრთხიანი რისკების ინტერაქტიული რუკა ამინდის 7-დღიან პროგნოზზე დაყრდნობით.">
 <!-- ▼▼▼ გასაზიარებლად: შეცვალე YOURNAME შენი GitHub/ჰოსტის მისამართით (აუცილებლად აბსოლუტური https URL) ▼▼▼ -->
 <meta property="og:type" content="website">
 <meta property="og:title" content="GeoHazard — პროგნოზული რისკების რუკა · საქართველო">
-<meta property="og:description" content="წყალდიდობა · მეწყერი · ზვავი · სიცხე · ქარი · ხანძარი — მუნიციპალიტეტებისა და სოფლების მიხედვით, 7-დღიანი პროგნოზით.">
+<meta property="og:description" content="წყალდიდობა · მეწყერი · ზვავი · სიცხე · ქარი · ხანძარი · სეტყვა — მუნიციპალიტეტებისა და სოფლების მიხედვით, 7-დღიანი პროგნოზით.">
 <meta property="og:url" content="https://YOURNAME.github.io/geohazard/">
 <meta property="og:image" content="https://YOURNAME.github.io/geohazard/preview.png">
 <meta property="og:image:width" content="1200">
@@ -315,7 +315,14 @@ aside{
     <button class="bndbtn active" id="bnd-adm2" onclick="setBndMode('adm2')" title="მუნიციპალიტეტები">🗺 მუნ.</button>
     <button class="bndbtn"        id="bnd-adm1" onclick="setBndMode('adm1')" title="რეგიონები">🏛 რეგ.</button>
   </div>
-    <div class="daybox">
+  <div style="display:flex;align-items:center;gap:0;background:var(--panel);border:1px solid var(--line);border-radius:9px;overflow:hidden;margin-left:4px">
+    <button class="bndbtn active" id="wx-none"   onclick="setWxLayer('none')"   title="რისკის ჩვენება">◆ რისკი</button>
+    <button class="bndbtn"        id="wx-precip" onclick="setWxLayer('precip')" title="ნალექი (მმ/დღე)">🌧 ნალექი</button>
+    <button class="bndbtn"        id="wx-wind"   onclick="setWxLayer('wind')"   title="ქარი (კმ/სთ)">🌬 ქარი</button>
+    <button class="bndbtn"        id="wx-temp"   onclick="setWxLayer('temp')"   title="ტ° მაქსიმუმი">🌡 ტემპ.</button>
+    <button class="bndbtn"        id="wx-cape"   onclick="setWxLayer('cape')"   title="CAPE — კონვექციის ენერგია (სეტყვა/ჭექ-ქუხ.)">⚡ CAPE</button>
+  </div>
+  <div class="daybox">
     <button class="daynav" onclick="stepDay(-1)" aria-label="წინა დღე">‹</button>
     <div class="daywrap">
       <div class="dlabel" id="dlabel">—</div>
@@ -361,13 +368,13 @@ aside{
     </div>
     <!-- NEWS PANEL -->
     <div class="news-panel">
-      <h2><span>📰 პრესა vs პროგნოზი</span><span style="font-size:9px;color:var(--dim);font-weight:400;text-transform:none">Claude API</span></h2>
+      <h2><span>📰 პრესა vs პროგნოზი</span><span style="font-size:9px;color:var(--dim);font-weight:400;text-transform:none">Google News · ბოლო 7 დღე</span></h2>
       <div class="news-srch">
-        <input id="news-q" type="text" placeholder="მუნიციპალიტეტი ან საფრთხე…" value="">
+        <input id="news-q" type="text" placeholder="სეტყვა OR წყალდიდობა OR მეწყერი…" value="">
         <button onclick="fetchNews()">🔍 ძიება</button>
       </div>
       <div class="news-result" id="news-result">
-        <div style="color:var(--dim);font-size:11.5px;padding:8px 0">აირჩიე მუნიციპალიტეტი ან ჩაწერე საძიებო სიტყვა და დააჭირე ძიებას. Claude გაეცნობა ქართულ ახალ ამბებს და შეადარებს პროგნოზს.</div>
+        <div style="color:var(--dim);font-size:11.5px;padding:8px 0">აირჩიე მუნიციპალიტეტი ან ჩაწერე საძიებო სიტყვა. Google News RSS-ით მოიძებნება ბოლო 7 დღის სიახლეები.</div>
       </div>
     </div>
   </aside>
@@ -513,22 +520,24 @@ const HAZ = [
   {id:"flood",   nm:"წყალდიდობა",ic:"🌊"},
   {id:"land",    nm:"მეწყერი",   ic:"⛰"},
   {id:"aval",    nm:"ზვავი",     ic:"❄"},
-  {id:"heat",    nm:"სიცხე",     ic:"🔥"},
+  {id:"heat",    nm:"სიცხე",     ic:"🌡"},
   {id:"wind",    nm:"ქარი",      ic:"🌬"},
   {id:"fire",    nm:"ხანძარი",   ic:"🔥"},
+  {id:"hail",    nm:"სეტყვა",    ic:"🌨"},
 ];
-const HAZ_KA = {flood:"წყალდიდობა",land:"მეწყერი",aval:"ზვავი",heat:"სიცხე",wind:"ქარი",fire:"ხანძარი"};
+const HAZ_KA = {flood:"წყალდიდობა",land:"მეწყერი",aval:"ზვავი",heat:"სიცხე",wind:"ქარი",fire:"ხანძარი",hail:"სეტყვა"};
 
-const HAZ_KEYS=['flood','land','aval','heat','wind','fire'];
-const HN=['წყალდიდობა','მეწყერი','ზვავი','სიცხე','ქარი','ხანძარი'];
+const HAZ_KEYS=['flood','land','aval','heat','wind','fire','hail'];
+const HN=['წყალდიდობა','მეწყერი','ზვავი','სიცხე','ქარი','ხანძარი','სეტყვა'];
 const RI=[0,0,0,0.58,0.90,1.12,1.24,1.32,1.41,1.45,1.49]; // Saaty random index
 const PRESETS={
- 'ზოგადი':[0.18,0.18,0.16,0.16,0.16,0.16],
- 'ჰიდრო-მეტეო':[0.34,0.30,0.12,0.08,0.10,0.06],
- 'მთის უსაფრთხოება':[0.17,0.26,0.34,0.05,0.12,0.06],
- 'ზაფხული · ხანძარი':[0.10,0.08,0.02,0.34,0.16,0.30],
+ 'ზოგადი':[0.16,0.16,0.14,0.14,0.14,0.14,0.12],
+ 'ჰიდრო-მეტეო':[0.30,0.26,0.10,0.07,0.09,0.05,0.13],
+ 'მთის უსაფრთხოება':[0.15,0.23,0.30,0.05,0.11,0.05,0.11],
+ 'ზაფხული · ხანძარი':[0.09,0.07,0.02,0.30,0.14,0.27,0.11],
+ 'კონვექტური':[0.15,0.12,0.05,0.12,0.18,0.06,0.32],
 };
-let state = {hazard:"overall", day:0, aggMethod:"ahp", slider:[], weights:[1/6,1/6,1/6,1/6,1/6,1/6], cr:0, fillMode:"border", timeMode:"forecast", bndMode:"adm2"};
+let state = {hazard:"overall", day:0, aggMethod:"ahp", slider:[], weights:[1/7,1/7,1/7,1/7,1/7,1/7,1/7], cr:0, fillMode:"border", timeMode:"forecast", bndMode:"adm2"};
 let data = [];        // per muni: {muni, daily:[{...risks, wx}]}
 let markerRefs=[], geoLayer=null, regionLayer=null, boundaries=null, FALLBACK=false, recByName={};
 let wxLayerType='none';
@@ -600,10 +609,13 @@ function calcRisks(ter, coast, precip, precip3, snow, tmax, wind,
 
   // ── სეტყვა / კონვექტური საფრთხე (CAPE) ──────────────────────────────────
   // CAPE (J/kg): >500 = ზომიერი, >1500 = ძლიერი, >3000 = ექსტრემალური
-  const capeFactor = piece(cape, [[0,0],[200,5],[500,20],[1000,45],[2000,70],[3500,90],[5000,100]]);
-  // ქარი კონვექციას ტრიგერავს — გუსტი > 40 კმ/სთ
-  const windConv = gusts > 40 ? Math.min(15,(gusts-40)*0.3) : 0;
-  let hail = clamp((capeFactor + windConv) * (T.hail||1.0));
+  // hilly/mountain terrain-ში კონვექცია უფრო ადვილად ვითარდება
+  const capeFactor = piece(cape, [[0,0],[200,8],[500,28],[1000,52],[2000,75],[3000,90],[5000,100]]);
+  // ქარი კონვექციას ტრიგერავს — გუსტი > 35 კმ/სთ ამაღლებს
+  const windConv = gusts > 35 ? Math.min(18,(gusts-35)*0.4) : 0;
+  // ტ° სხვაობა: ზაფხულში მაღალი T + კონვექციის ენერგია = სეტყვა
+  const tempBoost = tmax > 30 ? Math.min(12,(tmax-30)*1.2) : 0;
+  let hail = clamp((capeFactor + windConv + tempBoost) * (T.hail||1.0));
 
   flood=clamp(flood); land=clamp(land); aval=clamp(aval);
   heat=clamp(heat); w=clamp(w); fire=clamp(fire); hail=clamp(hail);
@@ -614,8 +626,8 @@ function calcRisks(ter, coast, precip, precip3, snow, tmax, wind,
 /* ---------- AHP კალიბრაცია ---------- */
 function sliderToVal(s){s=+s; return s>=0 ? s+1 : 1/(1-s);}              // -8..8 -> 1/9..9
 function valVerbal(a){a=a<1?1/a:a; return a<=1.4?'ტოლი':a<=2.4?'ოდნავ':a<=3.4?'ზომიერად':a<=5.4?'ძლიერ':a<=7.4?'ძალიან ძლიერ':'უკიდურესად';}
-function weightsToSliders(w){const o=[];for(let i=0;i<6;i++)for(let j=i+1;j<6;j++){const r=w[i]/w[j];o.push(r>=1?Math.min(8,Math.round(r-1)):-Math.min(8,Math.round(1/r-1)));}return o;}
-function buildMatrix(sl){const n=6,M=Array.from({length:n},()=>Array(n).fill(1));let k=0;for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){const a=sliderToVal(sl[k++]);M[i][j]=a;M[j][i]=1/a;}return M;}
+function weightsToSliders(w){const o=[];for(let i=0;i<7;i++)for(let j=i+1;j<7;j++){const r=w[i]/w[j];o.push(r>=1?Math.min(8,Math.round(r-1)):-Math.min(8,Math.round(1/r-1)));}return o;}
+function buildMatrix(sl){const n=7,M=Array.from({length:n},()=>Array(n).fill(1));let k=0;for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){const a=sliderToVal(sl[k++]);M[i][j]=a;M[j][i]=1/a;}return M;}
 function ahp(M){const n=M.length;
   const g=M.map(r=>Math.pow(r.reduce((p,x)=>p*x,1),1/n));
   const sum=g.reduce((a,b)=>a+b,0); const w=g.map(x=>x/sum);
@@ -631,7 +643,7 @@ function setAgg(m){state.aggMethod=m;document.querySelectorAll('.aggbtn').forEac
 function recomputeOverall(){
   if(!data.length)return;
   data.forEach(rec=>(rec.days||[]).forEach(d=>{
-    if(state.aggMethod==='max'){d.overall=Math.max(d.flood,d.land,d.aval,d.heat,d.wind,d.fire);}
+    if(state.aggMethod==='max'){d.overall=Math.max(d.flood,d.land,d.aval,d.heat,d.wind,d.fire,d.hail||0);}
     else{let s=0;HAZ_KEYS.forEach((k,i)=>s+=state.weights[i]*d[k]);d.overall=s;}
   }));
 }
@@ -741,7 +753,7 @@ function buildDays(u, R){
       wind=(d.wind_speed_10m_max||[])[apiIdx]??0;
       gusts=(d.wind_gusts_10m_max||[])[apiIdx]??wind;
       precipProb=(d.precipitation_probability_max||[])[apiIdx]??50;
-      cape=(d.cape_mean||d.cape||[])[apiIdx]??0;
+      cape=(d.cape_max||[])[apiIdx] ?? (d.cape_mean||d.cape||[])[apiIdx] ?? 0;
       soilMoist=(d.soil_moisture_0_to_7cm_mean||d.soil_moisture_0_to_7cm||[])[apiIdx]??0.2;
       freezeLevel=(d.freezing_level_height_mean||d.freezing_level_height||[])[apiIdx]??3000;
       date=(d.time||[])[apiIdx];
@@ -769,7 +781,8 @@ async function fetchWeather(pts){
   const DAILY=[
     'precipitation_sum','temperature_2m_max','wind_speed_10m_max',
     'snowfall_sum','wind_gusts_10m_max','precipitation_probability_max',
-    'cape_mean','soil_moisture_0_to_7cm_mean','freezing_level_height_mean'
+    'cape_mean','cape_max','soil_moisture_0_to_7cm_mean','freezing_level_height_mean',
+    'showers_sum','precipitation_hours'
   ].join(',');
   const PROXIES=[
     u=>u,
@@ -906,6 +919,8 @@ async function loadAll(){
   updateSrcNote();
   buildLayer(); recomputeOverall(); render();
   document.getElementById('load').classList.add('hidden');
+  // notification check after data loaded
+  if(notifEnabled) setTimeout(runAlertCheck, 1500);
 }
 
 /* ---------- დასახლებების ფენა (საკუთარი პროგნოზი) ---------- */
@@ -932,7 +947,7 @@ function styleFn(f){
   let c;
   if(wxLayerType!=='none' && d&&d.wx){
     const wx=d.wx;
-    const val = wxLayerType==='precip'?wx.precip : wxLayerType==='wind'?wx.wind : wx.tmax;
+    const val = wxLayerType==='precip'?wx.precip : wxLayerType==='wind'?wx.wind : wxLayerType==='cape'?wx.cape : wx.tmax;
     c=wxColor(wxLayerType,val||0);
   } else {
     const v=d?d[state.hazard]||0:0;
@@ -1017,7 +1032,7 @@ function selectByName(n){const r=data.find(x=>x.muni.n===n); if(r)selectMuni(r);
 
 function renderDetail(rec){
   const dy=getSlot?getSlot():7, d=rec.days[dy]||rec.days[7];
-  const order=[['flood','🌊'],['land','⛰'],['aval','❄'],['heat','🔥'],['wind','🌬'],['fire','🔥']];
+  const order=[['flood','🌊'],['land','⛰'],['aval','❄'],['heat','🌡'],['wind','🌬'],['fire','🔥'],['hail','🌨']];
   const rows=order.map(([k,ic])=>{
     const v=d[k]||0;
     return `<div class="hzrow"><span class="lab">${ic} ${HAZ_KA[k]}</span>
@@ -1035,6 +1050,7 @@ function renderDetail(rec){
        <div class="wxc"><div class="k">მაქს. T°</div><div class="v">${d.wx.tmax.toFixed(0)}<small> °C</small></div></div>
        <div class="wxc"><div class="k">ქარი</div><div class="v">${d.wx.wind.toFixed(0)}<small> km/h</small></div></div>
        <div class="wxc"><div class="k">თოვა</div><div class="v">${d.wx.snow.toFixed(1)}<small> cm</small></div></div>
+       <div class="wxc"><div class="k">CAPE</div><div class="v" style="color:${d.wx.cape>1500?'var(--r-high)':d.wx.cape>500?'var(--r-mod)':'inherit'}">${Math.round(d.wx.cape)}<small> J/kg</small></div></div>
      </div>`;
 }
 
@@ -1045,7 +1061,7 @@ function renderAHP(){
     `<button class="pbtn" onclick="loadPreset('${n}')">${n}</button>`).join('');
   // pairwise comparisons
   let k=0, rows='';
-  for(let i=0;i<6;i++)for(let j=i+1;j<6;j++){
+  for(let i=0;i<7;i++)for(let j=i+1;j<7;j++){
     const s=state.slider[k], a=sliderToVal(s);
     const dom = s>0?HN[i]:s<0?HN[j]:'—';
     const factor = Math.abs(s)===0?'ტოლი':(a<1?(1/a):a).toFixed(0)+'× · '+valVerbal(a);
@@ -1060,13 +1076,13 @@ function renderAHP(){
   const wmax=Math.max(...state.weights);
   document.getElementById('weights').innerHTML='<div class="wt-h">მიღებული წონები</div>'+
     HN.map((nm,i)=>`<div class="wt"><span class="wn">${nm}</span>
-      <span class="wbar"><i style="width:${state.weights[i]/wmax*100}%;background:${['#3da9fc','#8a5cf0','#56b6e0','#e2543a','#9aa6bd','#ec8b35'][i]}"></i></span>
+      <span class="wbar"><i style="width:${state.weights[i]/wmax*100}%;background:${['#3da9fc','#8a5cf0','#56b6e0','#e2543a','#9aa6bd','#ec8b35','#5bceae'][i]}"></i></span>
       <span class="wv">${(state.weights[i]*100).toFixed(1)}%</span></div>`).join('');
   // CR
   const cr=state.cr, ok=cr<0.10;
   document.getElementById('crbox').innerHTML=
     `<div class="crv ${ok?'good':'bad'}">CR = ${cr.toFixed(3)} ${ok?'✓':'⚠'}</div>
-     <div class="crt">${ok?'თანმიმდევრული შეფასებები (CR < 0.10)':'არათანმიმდევრული — გადახედე წყვილებს (CR ≥ 0.10)'}<br>λmax = ${(state.lmax||6).toFixed(3)} · n = 6 · RI = 1.24</div>`;
+     <div class="crt">${ok?'თანმიმდევრული შეფასებები (CR < 0.10)':'არათანმიმდევრული — გადახედე წყვილებს (CR ≥ 0.10)'}<br>λmax = ${(state.lmax||6).toFixed(3)} · n = 7 · RI = 1.32</div>`;
 }
 
 
@@ -1087,107 +1103,540 @@ function setTimeMode(m){
   render();
 }
 
-/* ---------- news: Claude API ---------- */
+/* ---------- news: Google News RSS (ბოლო 7 დღე) ---------- */
+
+// RSS CORS proxies — Google News RSS-ს პირდაპირ ვერ ვიღებთ, proxy სჭირდება
+const RSS_PROXIES=[
+  q=>`https://api.allorigins.win/raw?url=${encodeURIComponent('https://news.google.com/rss/search?q='+encodeURIComponent(q)+'&hl=ka&gl=GE&ceid=GE:ka')}`,
+  q=>`https://corsproxy.io/?${encodeURIComponent('https://news.google.com/rss/search?q='+encodeURIComponent(q)+'&hl=ka&gl=GE&ceid=GE:ka')}`,
+  q=>`https://api.allorigins.win/raw?url=${encodeURIComponent('https://news.google.com/rss/search?q='+encodeURIComponent(q)+'&hl=ka&gl=GE&ceid=GE:ka&tbs=qdr:w')}`,
+];
+
+function parseRSS(xmlText){
+  const parser=new DOMParser();
+  const doc=parser.parseFromString(xmlText,'application/xml');
+  const items=[...doc.querySelectorAll('item')];
+  return items.map(el=>({
+    title:(el.querySelector('title')||{}).textContent||'',
+    link:(el.querySelector('link')||{}).textContent||(el.querySelector('guid')||{}).textContent||'',
+    pubDate:(el.querySelector('pubDate')||{}).textContent||'',
+    source:(el.querySelector('source')||{}).textContent||(el.querySelector('name')||{}).textContent||'Google News',
+    description:(el.querySelector('description')||{}).textContent||'',
+  }));
+}
+
+function isWithin7Days(dateStr){
+  if(!dateStr) return true; // ვარაუდობთ ახალია
+  try{
+    const d=new Date(dateStr);
+    return (Date.now()-d.getTime())<7*24*3600*1000;
+  }catch(e){return true;}
+}
+
+function formatPubDate(dateStr){
+  if(!dateStr) return '?';
+  try{
+    const d=new Date(dateStr);
+    return d.toLocaleDateString('ka-GE',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  }catch(e){return dateStr;}
+}
+
+function stripHTML(html){
+  const t=document.createElement('div'); t.innerHTML=html; return t.textContent||'';
+}
+
 async function fetchNews(){
   const q = document.getElementById('news-q').value.trim();
   if(!q){alert('ჩაწერეთ საძიებო სიტყვა');return;}
   const box = document.getElementById('news-result');
-  box.innerHTML = '<div class="nspin">ქართულ ახალ ამბებს ვეძებ…</div>';
+  box.innerHTML='<div class="nspin">Google News-ს ვეძებ…</div>';
 
-  // ── 7-დღიანი ვადა + სტიქიის ტერმინი ──────────────────────────────────
-  const _now = new Date();
-  const _cutoff = new Date(_now.getTime() - 7*24*3600*1000);
-  const _fmtDate = d => d.toLocaleDateString('ka-GE', {day:'2-digit', month:'2-digit', year:'numeric'});
-  const _fmtISO  = d => d.toISOString().slice(0,10);
-  const dateWindow = _fmtDate(_cutoff) + ' – ' + _fmtDate(_now);
-  // ძიების ტერმინს ვუმატებთ "სტიქია" თუ უკვე არ შეიცავს
-  const qBase = q;
-  const qSearch = /სტიქ/i.test(q) ? q : q + ' სტიქია OR სტიქიური მოვლენა';
+  // საძიებო სტრინგი: ქართული + სტიქია კონტექსტი
+  const hazTerms='სტიქია OR წყალდიდობა OR მეწყერი OR სეტყვა OR ქარი OR ხანძარი OR გვალვა';
+  const qGeo = q.toLowerCase().includes('სტიქ')||q.toLowerCase().includes('წყალ')||q.toLowerCase().includes('მეწყ') ? q : `${q} (${hazTerms})`;
 
-  // Build context from selected municipality if any
-  let muniCtx = '';
-  if(window._selected){
-    const rec = window._selected;
-    const dy = getSlot();
-    const d = rec.days[dy];
-    muniCtx = `\nმიმდინარე პროგნოზი (${rec.muni.n}): წყალდიდობა ${Math.round(d.flood)}/100, მეწყერი ${Math.round(d.land)}/100, სიცხე ${Math.round(d.heat)}/100, ქარი ${Math.round(d.wind)}/100, ნალექი ${d.wx.precip.toFixed(1)}mm.`;
-  }
-
-  const prompt = `შენ ხარ GeoHazard-ის ასისტენტი — საქართველოს საფრთხის პროგნოზული სისტემა.
-
-მომხმარებელი ეძებს: "${qBase}"${muniCtx}
-
-დღეს არის: ${_fmtDate(_now)}. ᲛᲙᲐᲪᲠᲘ ᲬᲔᲡᲘ — 7 ᲓᲦᲘᲡ ᲚᲘᲛᲘᲢᲘ:
-• გამოიყენე ᲛᲮᲝᲚᲝᲓ სიახლეები პერიოდიდან: ${dateWindow}
-• ამ პერიოდზე ძველი სტატია (თუნდაც ერთი დღით) — სრულად ᲒᲐᲛᲝᲢᲝᲕᲔ
-• ძიების ტერმინი: "${qSearch}" (ქართულ საიტებზე)
-
-გთხოვ:
-1. web_search-ით მოძებნე: "${qSearch}" — ბოლო 7 დღე (${_fmtISO(_cutoff)}-დან)
-2. გადაამოწმე თითოეული შედეგის თარიღი — 7 დღეზე ძველი ᲐᲠ ჩართო
-3. მოიყვანე 3–5 სიახლე (წყარო, ზუსტი თარიღი DD.MM.YYYY, შინაარსი 2–3 წინადადება)
-4. შეადარე GeoHazard-ის პროგნოზს
-5. მოკლე დასკვნა
-
-თუ ბოლო 7 დღეში შესაბამისი სიახლე ვერ მოიძებნა — conclusion-ში ისე დაწერე.
-
-JSON პასუხი:
-{
-  "items": [
-    {"title":"სათაური","source":"წყარო","date":"DD.MM.YYYY","summary":"შინაარსი","match":"hi|mod|low","matchLabel":"ემთხვევა|ნაწილობრივ|განსხვავდება"}
-  ],
-  "conclusion": "დასკვნა"
-}
-მხოლოდ JSON, სხვა ტექსტის გარეშე.`;
-
-  try{
-    const resp=await fetch("https://api.anthropic.com/v1/messages",{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({
-        model:"claude-sonnet-4-20250514",
-        max_tokens:1500,
-        tools:[{type:"web_search_20250305",name:"web_search"}],
-        messages:[{role:"user",content:prompt}]
-      })
-    });
-    if(!resp.ok) throw new Error("API "+resp.status);
-    const data=await resp.json();
-    // extract text blocks
-    const txt=(data.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("");
-    let parsed;
+  let rssText=null;
+  for(const proxy of RSS_PROXIES){
     try{
-      const clean=txt.replace(/```json|```/g,"").trim();
-      parsed=JSON.parse(clean);
-    }catch(e){
-      // fallback: show raw text
-      box.innerHTML=`<div class="news-item"><div class="ni-txt" style="white-space:pre-wrap">${txt}</div></div>`;
-      return;
+      const r=await fetch(proxy(qGeo),{signal:AbortSignal.timeout(9000)});
+      if(r.ok){const t=await r.text(); if(t.includes('<item>')){rssText=t;break;}}
+    }catch(e){continue;}
+  }
+
+  if(!rssText){
+    // fallback — მარტივი ძიება სტიქიის გარეშე
+    for(const proxy of RSS_PROXIES){
+      try{
+        const r=await fetch(proxy(q),{signal:AbortSignal.timeout(8000)});
+        if(r.ok){const t=await r.text(); if(t.includes('<item>')){rssText=t;break;}}
+      }catch(e){continue;}
     }
-    const items=(parsed.items||[]);
-    let out=items.map(it=>`
-      <div class="news-item">
-        <div class="ni-head">📄 ${it.title||''}</div>
-        <div class="ni-src">${it.source||''} · ${it.date||''}</div>
-        <div class="ni-txt">${it.summary||''}</div>
-        <span class="ni-match ${it.match||'mod'}">${it.matchLabel||'ნაწილობრივ'}</span>
-      </div>`).join("");
-    if(parsed.conclusion){
-      out+=`<div class="news-item" style="border-color:var(--accent)"><div class="ni-head">💡 დასკვნა</div><div class="ni-txt">${parsed.conclusion}</div></div>`;
-    }
-    box.innerHTML=out||'<div style="color:var(--muted);font-size:12px;padding:8px 0">შედეგი ვერ მოიძებნა</div>';
-    box.innerHTML+='<div class="news-note">წყარო: ვებ-ძიება Claude Sonnet-ის საშუალებით. შეამოწმე ორიგინალი სტატიები.</div>';
-  }catch(e){
-    box.innerHTML=`<div style="color:var(--r-high);font-size:12px;padding:8px 0">შეცდომა: ${e.message}<br><small style="color:var(--muted)">API-ს გამოსაყენებლად GitHub Pages-ზე გახსენი (ან შეამოწმე API key-ი).</small></div>`;
+  }
+
+  if(!rssText){
+    // Google News-ის fallback — direct link
+    box.innerHTML=`<div class="news-item" style="border-color:var(--accent)">
+      <div class="ni-head">🔗 Google News — პირდაპირი ბმული</div>
+      <div class="ni-txt">RSS proxy ხელმიუწვდომელია. გახსენი Google News პირდაპირ:</div>
+      <a href="https://news.google.com/search?q=${encodeURIComponent(qGeo)}&hl=ka&gl=GE" target="_blank" style="color:var(--accent);font-size:11.5px;display:inline-block;margin-top:6px">🔍 ${q} — Google News →</a>
+    </div>
+    <div class="news-note">CORS შეზღუდვის გამო RSS ვერ ჩაიტვირთა. GitHub Pages-ზე გახსნისას მუშაობს.</div>`;
+    return;
+  }
+
+  const allItems=parseRSS(rssText);
+  const recent=allItems.filter(it=>isWithin7Days(it.pubDate));
+  const shown=recent.length>0?recent:allItems.slice(0,6); // fallback
+  const isFiltered=recent.length>0&&recent.length<allItems.length;
+
+  if(shown.length===0){
+    box.innerHTML=`<div style="color:var(--muted);font-size:12px;padding:8px 0">ბოლო 7 დღეში შესაბამისი სიახლე ვერ მოიძებნა: <b>${q}</b></div>
+    <a href="https://news.google.com/search?q=${encodeURIComponent(q)}&hl=ka&gl=GE" target="_blank" style="color:var(--accent);font-size:11px">🔍 Google News-ზე გახსნა →</a>`;
+    return;
+  }
+
+  // სასარგებლო კავშირი — სათაური შეიცავს საძიებო სიტყვებს → "ემთხვევა"
+  const qWords=q.toLowerCase().split(/\s+/).filter(w=>w.length>2);
+  function matchLevel(title){
+    const t=title.toLowerCase();
+    const hits=qWords.filter(w=>t.includes(w)).length;
+    if(hits>=2)return{cls:'hi',lbl:'ემთხვევა'};
+    if(hits===1)return{cls:'mod',lbl:'ნაწილობრივ'};
+    return{cls:'low',lbl:'არაპირდაპირ'};
+  }
+
+  let out=shown.slice(0,8).map(it=>{
+    const m=matchLevel(it.title);
+    const desc=stripHTML(it.description).slice(0,220);
+    const href=it.link||'#';
+    return `<div class="news-item">
+      <div class="ni-head"><a href="${href}" target="_blank" style="color:var(--accent);text-decoration:none">📄 ${it.title||'სათაური'}</a></div>
+      <div class="ni-src">${it.source||'Google News'} · ${formatPubDate(it.pubDate)}</div>
+      ${desc?`<div class="ni-txt">${desc}…</div>`:''}
+      <span class="ni-match ${m.cls}">${m.lbl}</span>
+    </div>`;
+  }).join('');
+
+  const note=isFiltered?`ბოლო 7 დღე: ${recent.length} შედეგი (სულ ${allItems.length})`:`ნაჩვენებია ${shown.length} შედეგი`;
+  box.innerHTML=out+`<div class="news-note">📡 Google News RSS · ${note} · <a href="https://news.google.com/search?q=${encodeURIComponent(q)}&hl=ka&gl=GE" target="_blank" style="color:var(--accent)">ყველა შედეგი →</a></div>`;
+}
+
+/* ============================================================
+   🔐 ADMIN PANEL — გაფრთხილებების მართვა
+   ============================================================ */
+
+// CSS admin panel
+(()=>{
+  const s=document.createElement('style');
+  s.textContent=`
+  /* ---- Admin Panel ---- */
+  #admin-modal{position:fixed;inset:0;z-index:9500;background:rgba(4,7,12,.82);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:20px}
+  #admin-modal.open{display:flex}
+  #admin-box{width:min(600px,100%);max-height:90vh;background:#101624;border:1px solid #2c3a5c;border-radius:16px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 40px 100px rgba(0,0,0,.8)}
+  #admin-box .ahead{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #1e2a42;background:#0d1320}
+  #admin-box .atitle{font-family:'Noto Serif Georgian',serif;font-weight:800;font-size:15px;color:#e8edf6;display:flex;align-items:center;gap:10px}
+  #admin-box .abody{padding:18px 20px;overflow-y:auto;display:flex;flex-direction:column;gap:18px}
+  .arow{display:flex;flex-direction:column;gap:6px}
+  .arow label{font-size:11.5px;font-weight:700;color:#8794ad;letter-spacing:.3px;text-transform:uppercase}
+  .arow input,.arow select,.arow textarea{background:#161d2c;border:1px solid #27314a;border-radius:8px;color:#e8edf6;font-family:'Noto Sans Georgian',sans-serif;font-size:12.5px;padding:8px 12px;outline:none;transition:.15s;width:100%}
+  .arow input:focus,.arow select:focus,.arow textarea:focus{border-color:#3da9fc}
+  .arow textarea{resize:vertical;min-height:70px;line-height:1.5}
+  .arow .hint{font-size:10.5px;color:#5a6478;line-height:1.5}
+  .arow .inline{display:flex;gap:8px;align-items:center}
+  .arow .inline input[type=number]{width:80px}
+  .arow .inline span{font-size:12px;color:#8794ad}
+  .alert-rule{background:#1c2436;border:1px solid #27314a;border-radius:10px;padding:11px 14px;display:flex;align-items:flex-start;gap:10px;cursor:default}
+  .alert-rule .rule-ic{font-size:18px;flex:0 0 auto}
+  .alert-rule .rule-body{flex:1}
+  .alert-rule .rule-nm{font-weight:700;font-size:12.5px;color:#e8edf6;margin-bottom:2px}
+  .alert-rule .rule-meta{font-size:10.5px;color:#8794ad;line-height:1.5}
+  .alert-rule .rule-del{background:none;border:1px solid #27314a;border-radius:6px;color:#5a6478;padding:4px 8px;cursor:pointer;font-size:11px;flex:0 0 auto;transition:.12s}
+  .alert-rule .rule-del:hover{border-color:#e2543a;color:#e2543a}
+  .alert-rule.active-rule{border-color:#5bceae;background:#0d1e1a}
+  .alert-rule.active-rule .rule-nm{color:#5bceae}
+  .abtns{display:flex;gap:8px;flex-wrap:wrap}
+  .abtn{border:1px solid #27314a;background:#1c2436;color:#e8edf6;font-family:'Noto Sans Georgian',sans-serif;font-size:12px;font-weight:600;padding:9px 16px;border-radius:8px;cursor:pointer;transition:.15s}
+  .abtn:hover{border-color:#3da9fc;color:#3da9fc}
+  .abtn.primary{background:#3da9fc;border-color:#3da9fc;color:#04121f}
+  .abtn.primary:hover{opacity:.88}
+  .abtn.danger{border-color:#e2543a;color:#e2543a;background:rgba(226,84,58,.08)}
+  .abtn.danger:hover{background:rgba(226,84,58,.18)}
+  .asep{border:none;border-top:1px solid #1e2a42;margin:0}
+  #admin-btn{position:fixed;bottom:64px;right:20px;z-index:8400;background:#0d1320;border:1px solid #27314a;color:#5a6478;border-radius:10px;padding:9px 13px;font-family:'Noto Sans Georgian',sans-serif;font-size:11.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;transition:.15s}
+  #admin-btn:hover{border-color:#3da9fc;color:#3da9fc}
+  .rule-badge{display:inline-block;font-size:9px;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px;background:rgba(91,206,174,.15);color:#5bceae}
+  `;
+  document.head.appendChild(s);
+})();
+
+// Admin button
+const adminBtn=document.createElement('button'); adminBtn.id='admin-btn';
+adminBtn.innerHTML='⚙ ადმინი'; document.body.appendChild(adminBtn);
+
+// Admin modal HTML
+const adminModal=document.createElement('div'); adminModal.id='admin-modal';
+adminModal.innerHTML=`
+<div id="admin-box">
+  <div class="ahead">
+    <div class="atitle">⚙ გაფრთხილებების ადმინი <span class="rule-badge" id="rule-count-badge">0</span></div>
+    <button class="mclose" onclick="closeAdmin()" style="background:none;border:1px solid #27314a;color:#8794ad;width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:14px">✕</button>
+  </div>
+  <div class="abody">
+    <!-- LOGIN SECTION -->
+    <div id="admin-login-sec">
+      <div class="arow">
+        <label>ადმინის პაროლი</label>
+        <div class="inline">
+          <input type="password" id="admin-pass" placeholder="შეიყვანე პაროლი…" onkeydown="if(event.key==='Enter')adminLogin()">
+          <button class="abtn primary" onclick="adminLogin()">შესვლა</button>
+        </div>
+        <div class="hint">სტანდარტული: <code style="color:#5bceae;background:#0d1e1a;padding:1px 5px;border-radius:4px">geohazard2025</code> — GitHub-ზე Deploy-ის შემდეგ შეცვალე.</div>
+      </div>
+    </div>
+    <!-- ADMIN CONTENT (hidden until login) -->
+    <div id="admin-content" style="display:none;display:flex;flex-direction:column;gap:18px">
+      <div style="font-size:11px;color:#5bceae;display:flex;align-items:center;gap:6px">✅ ავტორიზებული</div>
+      <hr class="asep">
+      <!-- New Rule Form -->
+      <div class="arow"><label>ახალი გაფრთხილების წესი</label></div>
+      <div class="arow">
+        <label>სახელი / აღწერა</label>
+        <input type="text" id="rule-name" placeholder="მაგ. თბილისი სეტყვა">
+      </div>
+      <div class="arow">
+        <label>საფრთხის ტიპი</label>
+        <select id="rule-haz">
+          <option value="hail">🌨 სეტყვა</option>
+          <option value="flood">🌊 წყალდიდობა</option>
+          <option value="land">⛰ მეწყერი</option>
+          <option value="wind">🌬 ქარი</option>
+          <option value="fire">🔥 ხანძარი</option>
+          <option value="heat">🌡 სიცხე</option>
+          <option value="overall">◆ ჯამური</option>
+        </select>
+      </div>
+      <div class="arow">
+        <label>ზღვარი (0–100)</label>
+        <div class="inline">
+          <input type="number" id="rule-thresh" value="50" min="10" max="100" step="5">
+          <span>და ზევით → გაფრთხილება</span>
+        </div>
+      </div>
+      <div class="arow">
+        <label>მუნიციპალიტეტი (სახელი ან "ყველა")</label>
+        <input type="text" id="rule-muni" placeholder="ყველა" value="ყველა">
+        <div class="hint">ჩაწერე ზუსტი ქართული სახელი (მაგ. "თბილისი") ან "ყველა" ნებისმიერი მუნ-სთვის.</div>
+      </div>
+      <div class="arow">
+        <label>შეტყობინების ტექსტი (სურვილისამებრ)</label>
+        <textarea id="rule-msg" placeholder="მაგ. გამოაცხადე სიფრთხილე — სეტყვა მოსალოდნელია!"></textarea>
+      </div>
+      <div class="arow">
+        <label>პერიოდი (+X დღე წინ)</label>
+        <div class="inline">
+          <input type="number" id="rule-days" value="1" min="1" max="5" step="1">
+          <span>დღეში (1=ხვალ, 2=ზეგ, …)</span>
+        </div>
+      </div>
+      <div class="abtns">
+        <button class="abtn primary" onclick="addAlertRule()">+ დამატება</button>
+        <button class="abtn" onclick="testAlertRules()">🔔 ახლა შემოწმება</button>
+      </div>
+      <hr class="asep">
+      <div class="arow">
+        <label>არსებული წესები <span id="rule-count-inline" style="color:#5bceae;font-weight:700">0</span></label>
+        <div id="rules-list" style="display:flex;flex-direction:column;gap:7px;margin-top:4px"></div>
+      </div>
+      <hr class="asep">
+      <div class="arow">
+        <label>ხელით გაფრთხილება (Broadcast)</label>
+        <textarea id="manual-alert-msg" placeholder="შეტყობინების ტექსტი — გაუგზავნე ყველა ბრაუზერ-ტაბს"></textarea>
+        <div class="hint">გამოჩნდება in-app banner-ად. Browser Notification-ი ჩართულ მომხმარებლებს გაეგზავნება.</div>
+      </div>
+      <div class="abtns">
+        <button class="abtn primary" onclick="broadcastManualAlert()">📢 გაგზავნა</button>
+        <button class="abtn danger" onclick="clearAllRules()">🗑 ყველა წესის წაშლა</button>
+      </div>
+    </div>
+  </div>
+</div>`;
+document.body.appendChild(adminModal);
+
+// Admin state
+const ADMIN_PASS='geohazard2025';
+let adminAuth=false;
+let alertRules=[]; // [{id,name,haz,thresh,muni,msg,days,active}]
+
+function openAdmin(){adminModal.classList.add('open'); renderRules();}
+function closeAdmin(){adminModal.classList.remove('open');}
+adminBtn.addEventListener('click',openAdmin);
+adminModal.addEventListener('click',e=>{if(e.target===adminModal)closeAdmin();});
+
+function adminLogin(){
+  const pw=document.getElementById('admin-pass').value;
+  if(pw===ADMIN_PASS){
+    adminAuth=true;
+    document.getElementById('admin-login-sec').style.display='none';
+    document.getElementById('admin-content').style.display='flex';
+    document.getElementById('admin-content').style.flexDirection='column';
+    document.getElementById('admin-content').style.gap='18px';
+    renderRules();
+  } else {
+    document.getElementById('admin-pass').style.borderColor='#e2543a';
+    setTimeout(()=>document.getElementById('admin-pass').style.borderColor='',1200);
   }
 }
 
-/* ---------- auto-fill search from selected muni ---------- */
+function addAlertRule(){
+  if(!adminAuth) return;
+  const name=document.getElementById('rule-name').value.trim()||'წესი '+(alertRules.length+1);
+  const haz=document.getElementById('rule-haz').value;
+  const thresh=parseInt(document.getElementById('rule-thresh').value)||50;
+  const muni=document.getElementById('rule-muni').value.trim()||'ყველა';
+  const msg=document.getElementById('rule-msg').value.trim();
+  const days=parseInt(document.getElementById('rule-days').value)||1;
+  const rule={id:Date.now(),name,haz,thresh,muni,msg,days,active:true};
+  alertRules.push(rule);
+  saveRules();
+  renderRules();
+  // clear form
+  document.getElementById('rule-name').value='';
+  document.getElementById('rule-msg').value='';
+  showInAppAlert('✅','წესი დამატებულია',`${name} — ${HAZ_KA[haz]||haz} ≥${thresh} (${muni})`,'hail');
+}
+
+function deleteRule(id){
+  alertRules=alertRules.filter(r=>r.id!==id);
+  saveRules(); renderRules();
+}
+
+function toggleRule(id){
+  const r=alertRules.find(x=>x.id===id); if(r){r.active=!r.active; saveRules(); renderRules();}
+}
+
+const HAZ_IC={flood:'🌊',land:'⛰',aval:'❄',heat:'🌡',wind:'🌬',fire:'🔥',hail:'🌨',overall:'◆'};
+
+function renderRules(){
+  const list=document.getElementById('rules-list'); if(!list) return;
+  const cnt=alertRules.length;
+  document.getElementById('rule-count-inline').textContent=cnt;
+  document.getElementById('rule-count-badge').textContent=cnt;
+  if(!cnt){list.innerHTML='<div style="color:#5a6478;font-size:11.5px">წესები არ არის. დაამატე ზემოთ.</div>';return;}
+  list.innerHTML=alertRules.map(r=>`
+    <div class="alert-rule ${r.active?'active-rule':''}">
+      <div class="rule-ic">${HAZ_IC[r.haz]||'◆'}</div>
+      <div class="rule-body">
+        <div class="rule-nm">${r.name} ${r.active?'<span style="font-size:9px;color:#5bceae">●</span>':'<span style="font-size:9px;color:#5a6478">○</span>'}</div>
+        <div class="rule-meta">${HAZ_KA[r.haz]||r.haz} ≥ ${r.thresh}/100 · ${r.muni} · +${r.days} დღე${r.msg?' · "'+r.msg.slice(0,40)+'"':''}</div>
+      </div>
+      <div style="display:flex;gap:5px;flex:0 0 auto">
+        <button class="rule-del" onclick="toggleRule(${r.id})">${r.active?'⏸':'▶'}</button>
+        <button class="rule-del" onclick="deleteRule(${r.id})">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+function saveRules(){
+  try{localStorage.setItem('geohazard_alert_rules',JSON.stringify(alertRules));}catch(e){}
+}
+function loadRules(){
+  try{const s=localStorage.getItem('geohazard_alert_rules'); if(s)alertRules=JSON.parse(s);}catch(e){}
+  renderRules();
+}
+
+function testAlertRules(){
+  if(!data||!data.length){showInAppAlert('⚠','მონაცემები არ არის','ჯერ დაელოდე ამინდის ჩატვირთვას.');return;}
+  let fired=0;
+  alertRules.forEach(rule=>{
+    if(!rule.active)return;
+    const slot=7+rule.days; // slot 7=today, 8=+1day …
+    data.forEach(rec=>{
+      if(rule.muni!=='ყველა'&&rec.muni.n!==rule.muni) return;
+      const d=rec.days[slot]; if(!d)return;
+      const v=d[rule.haz]||0;
+      if(v>=rule.thresh){
+        fired++;
+        const title=rule.msg||`${HAZ_IC[rule.haz]} ${HAZ_KA[rule.haz]||rule.haz} — ${rec.muni.n}`;
+        const body=`${rec.muni.n} · ${rec.muni.r}: ${Math.round(v)}/100 (+${rule.days} დღე)`;
+        sendAlert(title,body,`rule_${rule.id}_${rec.muni.id}_${slot}`);
+        showInAppAlert(HAZ_IC[rule.haz]||'⚠',title,body,'hail');
+      }
+    });
+  });
+  if(!fired) showInAppAlert('✅','შემოწმება დასრულდა','ამ მომენტისთვის წინ გაფრთხილება არ ესაჭიროება.','hail');
+}
+
+function broadcastManualAlert(){
+  if(!adminAuth)return;
+  const msg=document.getElementById('manual-alert-msg').value.trim();
+  if(!msg){alert('შეიყვანე ტექსტი');return;}
+  showInAppAlert('📢','ადმინის გაფრთხილება',msg,'danger');
+  sendAlert('📢 GeoHazard გაფრთხილება',msg,'manual_'+Date.now());
+  document.getElementById('manual-alert-msg').value='';
+  closeAdmin();
+}
+
+function clearAllRules(){
+  if(!confirm('ყველა წესი წაიშლება. დარწმუნებული ხარ?'))return;
+  alertRules=[];saveRules();renderRules();
+}
+
+// override runAlertCheck to also run custom rules
+const _origRunAlertCheck=runAlertCheck;
+function runAlertCheck(){
+  _origRunAlertCheck();
+  testAlertRulesQuiet();
+}
+
+function testAlertRulesQuiet(){
+  if(!data||!data.length||!alertRules.length)return;
+  alertRules.forEach(rule=>{
+    if(!rule.active)return;
+    const slot=7+rule.days;
+    data.forEach(rec=>{
+      if(rule.muni!=='ყველა'&&rec.muni.n!==rule.muni)return;
+      const d=rec.days[slot]; if(!d)return;
+      const v=d[rule.haz]||0;
+      if(v>=rule.thresh){
+        const title=rule.msg||`${HAZ_IC[rule.haz]} ${HAZ_KA[rule.haz]||rule.haz}: ${rec.muni.n}`;
+        const body=`${rec.muni.n} · ${Math.round(v)}/100 (+${rule.days} დღე)`;
+        sendAlert(title,body,`rule_${rule.id}_${rec.muni.id}_${slot}`);
+        showInAppAlert(HAZ_IC[rule.haz]||'⚠',title,body,'hail');
+      }
+    });
+  });
+}
+
+// expose admin functions
+window.closeAdmin=closeAdmin; window.adminLogin=adminLogin; window.addAlertRule=addAlertRule;
+window.deleteRule=deleteRule; window.toggleRule=toggleRule; window.testAlertRules=testAlertRules;
+window.broadcastManualAlert=broadcastManualAlert; window.clearAllRules=clearAllRules;
+
+// load saved rules on startup
+loadRules();
+
+/* ============================================================
+   🔔 შეტყობინებების სისტემა (Notification API + in-app alert)
+   ============================================================ */
+
+// შეტყობინების CSS (in-app banner)
+(()=>{
+  const s=document.createElement('style');
+  s.textContent=`
+  #alert-tray{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9000;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;width:min(520px,92vw)}
+  .alert-card{background:rgba(22,29,44,.97);border:1px solid var(--r-high);border-radius:12px;padding:13px 18px;box-shadow:0 8px 30px rgba(0,0,0,.6);backdrop-filter:blur(8px);display:flex;align-items:flex-start;gap:12px;pointer-events:all;animation:slideUp .35s ease;width:100%}
+  .alert-card.hail{border-color:#5bceae}
+  .alert-card.wind{border-color:var(--r-elev)}
+  .alert-card.flood{border-color:#2171b5}
+  @keyframes slideUp{from{transform:translateY(30px);opacity:0}to{transform:translateY(0);opacity:1}}
+  .alert-ic{font-size:22px;flex:0 0 auto;margin-top:2px}
+  .alert-body{flex:1}
+  .alert-title{font-weight:700;font-size:13px;color:var(--ink);margin-bottom:3px}
+  .alert-sub{font-size:11.5px;color:var(--muted);line-height:1.5}
+  .alert-close{background:none;border:none;color:var(--dim);font-size:16px;cursor:pointer;flex:0 0 auto;padding:0 0 0 8px}
+  .alert-close:hover{color:var(--ink)}
+  #notif-btn{position:fixed;bottom:20px;right:20px;z-index:8500;background:var(--panel2);border:1px solid var(--line);color:var(--muted);border-radius:10px;padding:9px 14px;font-family:'Noto Sans Georgian',sans-serif;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;transition:.15s}
+  #notif-btn:hover{border-color:var(--accent);color:var(--accent)}
+  #notif-btn.on{border-color:#5bceae;color:#5bceae;background:#0d1e1a}
+  `;
+  document.head.appendChild(s);
+})();
+
+// Alert tray
+const alertTray=document.createElement('div'); alertTray.id='alert-tray'; document.body.appendChild(alertTray);
+
+// Notification toggle button
+const notifBtn=document.createElement('button'); notifBtn.id='notif-btn';
+notifBtn.innerHTML='🔔 გაფრთხილება'; document.body.appendChild(notifBtn);
+
+let notifEnabled=false, notifTimer=null, lastAlerts=new Set();
+
+function showInAppAlert(icon, title, sub, type='danger'){
+  const c=document.createElement('div'); c.className='alert-card '+(type==='hail'?'hail':type==='wind'?'wind':type==='flood'?'flood':'');
+  c.innerHTML=`<div class="alert-ic">${icon}</div><div class="alert-body"><div class="alert-title">${title}</div><div class="alert-sub">${sub}</div></div><button class="alert-close" onclick="this.closest('.alert-card').remove()">✕</button>`;
+  alertTray.appendChild(c);
+  setTimeout(()=>c.remove(), 18000);
+}
+
+async function enableNotifications(){
+  if(!('Notification' in window)){showInAppAlert('⚠','შეტყობინება','ბრაუზერი არ უჭერს მხარს Notification API-ს');return;}
+  if(Notification.permission==='denied'){showInAppAlert('⚠','გაფრთხილება','შეტყობინება დაბლოკილია ბრაუზერის პარამეტრებში. გთხოვთ განბლოკოთ.');return;}
+  if(Notification.permission!=='granted'){await Notification.requestPermission();}
+  notifEnabled=!notifEnabled;
+  notifBtn.classList.toggle('on',notifEnabled);
+  notifBtn.innerHTML=notifEnabled?'🔔 ჩართულია':'🔔 გაფრთხილება';
+  if(notifEnabled){
+    showInAppAlert('✅','გაფრთხილება ჩართულია','ყოველ 2 საათში სისტემა შეამოწმებს საფრთხეებს. 3–6 სთ-ით ადრე მიიღებთ შეტყობინებას.','hail');
+    runAlertCheck();
+    notifTimer=setInterval(runAlertCheck, 2*60*60*1000); // ყოველ 2 სთ
+  } else {
+    clearInterval(notifTimer); notifTimer=null; lastAlerts.clear();
+    showInAppAlert('🔕','გაფრთხილება გამორთულია','შეტყობინებები შეჩერებულია.');
+  }
+}
+
+notifBtn.addEventListener('click', enableNotifications);
+
+function sendAlert(title, body, tag){
+  if(!lastAlerts.has(tag)){
+    lastAlerts.add(tag);
+    setTimeout(()=>lastAlerts.delete(tag), 6*60*60*1000); // 6სთ-ში გაიმეორებს
+    if(Notification.permission==='granted'){
+      try{new Notification(title,{body,icon:'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22><text y=%2226%22 font-size=%2228%22>⚡</text></svg>',tag});}catch(e){}
+    }
+  }
+}
+
+function runAlertCheck(){
+  if(!data||!data.length)return;
+  // შემდეგი 1–2 დღის (slot 8, 9 = +1, +2 დღე) საფრთხეების სკანი
+  const checkSlots=[8,9]; // forecast slot 8=+1 day, 9=+2 day
+  const THRESH_HIGH=60, THRESH_MOD=40;
+  const highMunis=[], modMunis=[];
+  checkSlots.forEach(slot=>{
+    data.forEach(rec=>{
+      const d=rec.days[slot]; if(!d)return;
+      // სეტყვა, წყალდიდობა, ქარი — ძირითადი კონვექტური საფრთხეები
+      const dangers=[
+        {k:'hail',ic:'🌨',nm:'სეტყვა',v:d.hail},
+        {k:'flood',ic:'🌊',nm:'წყალდიდობა',v:d.flood},
+        {k:'wind',ic:'🌬',nm:'ქარი',v:d.wind},
+        {k:'land',ic:'⛰',nm:'მეწყერი',v:d.land},
+      ];
+      dangers.forEach(({k,ic,nm,v})=>{
+        if(v>=THRESH_HIGH){
+          const tag=`${rec.muni.n}_${k}_${slot}`;
+          const label=slot===8?'ხვალ':'ზეგ';
+          const body=`${rec.muni.n} · ${rec.muni.r}: ${nm} ${Math.round(v)}/100 (${label})`;
+          sendAlert(`⚠ მაღალი რისკი: ${nm}`,body,tag);
+          highMunis.push(`${ic} ${rec.muni.n} [${Math.round(v)}]`);
+        } else if(v>=THRESH_MOD){
+          modMunis.push(`${ic} ${rec.muni.n}`);
+        }
+      });
+    });
+  });
+  if(highMunis.length){
+    showInAppAlert('🚨','მაღალი საფრთხე — შემდეგი 48 სთ',
+      `<b>რისკი ≥60:</b> ${highMunis.slice(0,6).join(' · ')}${highMunis.length>6?` და კიდევ ${highMunis.length-6}...`:''}`,
+      'danger');
+  } else if(modMunis.length){
+    showInAppAlert('⚠','ზომიერი საფრთხე — შემდეგი 48 სთ',
+      `ამაღლებული სიფრთხილე: ${modMunis.slice(0,5).join(' · ')}${modMunis.length>5?'...':''}`,
+      'wind');
+  } else {
+    // quiet — no banner
+  }
+}
+
+/* ============ end alert system ============ */
+
+
 function selectMuni(rec){
   selected=rec; window._selected=rec; renderDetail(rec);
   // auto-populate news search
   const q=document.getElementById('news-q');
-  if(q && rec.muni.n) q.value=rec.muni.n+' წყალდიდობა OR მეწყერი OR გვალვა';
+  if(q && rec.muni.n) q.value=rec.muni.n+' სტიქია OR წყალდიდობა OR მეწყერი OR სეტყვა';
   map.setView([rec.muni.lat,rec.muni.lon], map.getZoom()<8?8:map.getZoom(),{animate:true});
   if(window.innerWidth<=860) document.querySelector('aside').classList.add('open');
 }
@@ -1235,6 +1684,16 @@ const WX_LEGENDS = {
       {c:'#6baed6',l:'გრილი',       s:'10–22°'},
       {c:'#084594',l:'ცივი',        s:'<10°'},
     ]
+  },
+  cape:{
+    title:'⚡ CAPE (J/kg) — სეტყვა/ჭექა',
+    rows:[
+      {c:'#a01530',l:'ექსტრემალური',s:'≥3000'},
+      {c:'#e2543a',l:'ძლიერი',      s:'1500–3000'},
+      {c:'#ec8b35',l:'ზომიერი',     s:'500–1500'},
+      {c:'#e6c84f',l:'სუსტი',       s:'200–500'},
+      {c:'#2ec27e',l:'მცირე',       s:'0–200'},
+    ]
   }
 };
 
@@ -1260,12 +1719,19 @@ function wxColor(type, val){
     if(val>=10)return '#6baed6';
     return '#084594';
   }
+  if(type==='cape'){
+    if(val>=3000)return '#a01530';
+    if(val>=1500)return '#e2543a';
+    if(val>=500) return '#ec8b35';
+    if(val>=200) return '#e6c84f';
+    return '#2ec27e';
+  }
   return '#2ec27e';
 }
 
 function setWxLayer(type){
   wxLayerType=type;
-  document.querySelectorAll('#wx-none,#wx-precip,#wx-wind,#wx-temp').forEach(b=>
+  document.querySelectorAll('#wx-none,#wx-precip,#wx-wind,#wx-temp,#wx-cape').forEach(b=>
     b.classList.toggle('active',b.id==='wx-'+type));
   // legend update
   const leg=WX_LEGENDS[type]||WX_LEGENDS.none;
@@ -1324,7 +1790,7 @@ function toggleVillages(){ showVillages=!showVillages; document.getElementById('
   refreshSettlements(); }
 function setBasemap(name){ if(baseTile)map.removeLayer(baseTile); baseTile=window.__bases[name]; baseTile.addTo(map);
   document.querySelectorAll('.bm').forEach(b=>b.classList.toggle('active',b.textContent===name)); }
-window.setHaz=setHaz; window.selectByName=selectByName; window.fetchNews=fetchNews; window.setWxLayer=setWxLayer; window.setFillMode=setFillMode; window.setTimeMode=setTimeMode; window.setBndMode=setBndMode;
+window.setHaz=setHaz; window.selectByName=selectByName; window.fetchNews=fetchNews; window.openAdmin=openAdmin; window.setWxLayer=setWxLayer; window.setFillMode=setFillMode; window.setTimeMode=setTimeMode; window.setBndMode=setBndMode;
 window.loadPreset=loadPreset; window.setSlider=setSlider; window.setAgg=setAgg; window.loadAll=loadAll;
 window.stepDay=stepDay; window.togglePlay=togglePlay; window.toggleVillages=toggleVillages; window.setBasemap=setBasemap;
 init();
