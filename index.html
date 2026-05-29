@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GeoHazard v4 — საქართველოს საფრთხეების პროგნოზული რუკა</title>
+<title>GeoHazard v5 — საქართველოს საფრთხეების პროგნოზული რუკა</title>
 <meta name="description" content="საქართველოს მუნიციპალიტეტებისა და დასახლებების მრავალსაფრთხიანი რისკების ინტერაქტიული რუკა ამინდის 7-დღიან პროგნოზზე დაყრდნობით.">
-<!-- ▼▼▼ გასაზიარებლად: https://no-dari.github.io/geohazard_forecast/ ▼▼▼ -->
+<!-- ▼▼▼ გასაზიარებლად: შეცვალე YOURNAME შენი GitHub/ჰოსტის მისამართით (აუცილებლად აბსოლუტური https URL) ▼▼▼ -->
 <meta property="og:type" content="website">
 <meta property="og:title" content="GeoHazard — პროგნოზული რისკების რუკა · საქართველო">
 <meta property="og:description" content="წყალდიდობა · მეწყერი · ზვავი · სიცხე · ქარი · ხანძარი · სეტყვა — მუნიციპალიტეტებისა და სოფლების მიხედვით, 7-დღიანი პროგნოზით.">
@@ -508,10 +508,10 @@ const MUNI = [
 
 /* ============ რელიეფის კოეფიციენტები ============ */
 const TER = {
-  high:    {flood:0.80, land:1.30, aval:1.00, hail:0.70},
-  mountain:{flood:0.95, land:1.20, aval:0.55, hail:1.10},
-  hilly:   {flood:1.00, land:0.95, aval:0.10, hail:1.25},
-  lowland: {flood:1.25, land:0.55, aval:0.00, hail:1.00},
+  high:    {flood:0.80, land:1.30, aval:1.00, hail:0.75},
+  mountain:{flood:0.95, land:1.20, aval:0.55, hail:1.15},
+  hilly:   {flood:1.00, land:0.95, aval:0.10, hail:1.40},  // გორაკიანი = კონვექციის კარგი პირობები
+  lowland: {flood:1.25, land:0.55, aval:0.00, hail:1.10},
 };
 
 /* ============ საფრთხეები ============ */
@@ -568,7 +568,8 @@ function getCss(v){return getComputedStyle(document.documentElement).getProperty
 
 /* ---------- risk model ---------- */
 function calcRisks(ter, coast, precip, precip3, snow, tmax, wind,
-                   gusts=wind, cape=0, soilMoist=0.2, freezeLevel=3000){
+                   gusts=wind, cape=0, soilMoist=0.2, freezeLevel=3000,
+                   precipProb=50, showers=0){
   const T = TER[ter];
 
   // ── წყალდიდობა ─────────────────────────────────────────────────────────
@@ -607,15 +608,28 @@ function calcRisks(ter, coast, precip, precip3, snow, tmax, wind,
   let dry = precip3 < 2 ? soilDry : precip3 < 10 ? soilDry*0.7 : precip3 < 25 ? 0.3 : 0.1;
   let fire = clamp(clamp((tmax-20)*4,0,80)*dry + clamp(gusts*0.35,0,25)*dry);
 
-  // ── სეტყვა / კონვექტური საფრთხე (CAPE) ──────────────────────────────────
-  // CAPE (J/kg): >500 = ზომიერი, >1500 = ძლიერი, >3000 = ექსტრემალური
-  // hilly/mountain terrain-ში კონვექცია უფრო ადვილად ვითარდება
-  const capeFactor = piece(cape, [[0,0],[200,8],[500,28],[1000,52],[2000,75],[3000,90],[5000,100]]);
-  // ქარი კონვექციას ტრიგერავს — გუსტი > 35 კმ/სთ ამაღლებს
-  const windConv = gusts > 35 ? Math.min(18,(gusts-35)*0.4) : 0;
-  // ტ° სხვაობა: ზაფხულში მაღალი T + კონვექციის ენერგია = სეტყვა
-  const tempBoost = tmax > 30 ? Math.min(12,(tmax-30)*1.2) : 0;
-  let hail = clamp((capeFactor + windConv + tempBoost) * (T.hail||1.0));
+  // ── სეტყვა / კონვექტური საფრთხე ──────────────────────────────────────────
+  // Signal 1: CAPE (hourly peak) — პირველადი სიგნალი
+  const capeFactor = piece(cape, [[0,0],[200,10],[500,32],[1000,55],[2000,75],[3000,90],[5000,100]]);
+
+  // Signal 2: კონვექტური ნალექი (showers) — თუ CAPE დაბალია მაგრამ convection მიდის
+  // showers_sum > 2mm → სეტყვა შესაძლებელია; >8mm → მაღალი ალბათობა
+  const showersFactor = piece(showers, [[0,0],[2,15],[5,30],[10,50],[20,70],[40,85]]);
+
+  // Signal 3: ტ° + ტენიანობა + სიმაღლე — კლასიკური სეტყვის პირობები
+  // 28–38°C + hilly/mountain → კონვექცია ადვილია; >38 → ძალიან მშრალი, ნაკლები სეტყვა
+  const tempHail = tmax>=28&&tmax<=40 ? piece(tmax,[[28,5],[32,18],[36,30],[40,22]]) : tmax<28?0:10;
+
+  // Signal 4: precipProb × convective component
+  // მაღალი ნალექის ალბათობა + ტემპ > 25 → convective ეპიზოდი
+  const probConv = tmax>25 ? piece(precipProb,[[0,0],[30,5],[50,12],[70,22],[90,30]]) : 0;
+
+  // ქარი კონვექციას ტრიგერავს
+  const windConv = gusts > 35 ? Math.min(15,(gusts-35)*0.35) : 0;
+
+  // კომბინაცია: max(CAPE-based, Showers-based) + temperature context + wind
+  const hailBase = Math.max(capeFactor, showersFactor*0.85) + tempHail + probConv + windConv;
+  let hail = clamp(hailBase * (T.hail||1.0));
 
   flood=clamp(flood); land=clamp(land); aval=clamp(aval);
   heat=clamp(heat); w=clamp(w); fire=clamp(fire); hail=clamp(hail);
@@ -744,7 +758,7 @@ function buildDays(u, R){
     // slot 0-6 = history (day -7..-1), slot 7-13 = forecast (day 0..+6)
     const dayOffset = slot - 7; // -7..+6 relative to today
     const apiIdx = PAST_OFF + dayOffset;
-    let precip=0,precip3=0,snow=0,tmax=20,wind=10,gusts=10,precipProb=50,cape=0,soilMoist=0.2,freezeLevel=3000,date;
+    let precip=0,precip3=0,snow=0,tmax=20,wind=10,gusts=10,precipProb=50,cape=0,soilMoist=0.2,freezeLevel=3000,showers=0,date;
     if(R&&R.daily){const d=R.daily;
       precip=(d.precipitation_sum||[])[apiIdx]??0;
       precip3=precip+((d.precipitation_sum||[])[apiIdx-1]??0)+((d.precipitation_sum||[])[apiIdx-2]??0);
@@ -756,6 +770,7 @@ function buildDays(u, R){
       cape=(d.cape_max||[])[apiIdx] ?? (d.cape_mean||d.cape||[])[apiIdx] ?? 0;
       soilMoist=(d.soil_moisture_0_to_7cm_mean||d.soil_moisture_0_to_7cm||[])[apiIdx]??0.2;
       freezeLevel=(d.freezing_level_height_mean||d.freezing_level_height||[])[apiIdx]??3000;
+      showers=(d.showers_sum||[])[apiIdx]??0;
       date=(d.time||[])[apiIdx];
     }else{
       const synDay=Math.max(0,dayOffset);
@@ -764,9 +779,11 @@ function buildDays(u, R){
       precip3=precip+synthWx(u.lat,u.lon,ter,Math.max(0,synDay-1)).precip+synthWx(u.lat,u.lon,ter,Math.max(0,synDay-2)).precip;
       gusts=wind*1.4|0; precipProb=precip>2?60:20; cape=tmax>28?500+tmax*20:0;
       soilMoist=Math.min(0.5,precip3/60+0.15); freezeLevel=ter==='high'?1800:ter==='mountain'?2500:3500;
+      // synth: showers ≈ convective fraction of precip (rough estimate)
+      showers = tmax>28 ? precip*0.6 : tmax>22 ? precip*0.3 : 0;
       date=new Date(today.getTime()+dayOffset*86400000).toISOString().slice(0,10);
     }
-    allDays.push({...calcRisks(ter,u.c,precip,precip3,snow,tmax,wind,gusts,cape,soilMoist,freezeLevel), date, wx:{precip,precip3,snow,tmax,wind,gusts,precipProb,cape,soilMoist,freezeLevel}, isPast:dayOffset<0});
+    allDays.push({...calcRisks(ter,u.c,precip,precip3,snow,tmax,wind,gusts,cape,soilMoist,freezeLevel,precipProb,showers), date, wx:{precip,precip3,snow,tmax,wind,gusts,precipProb,cape,soilMoist,freezeLevel,showers}, isPast:dayOffset<0});
   }
   // days[0-6] = history, days[7-13] = forecast → we expose all 14 but UI selects range
   return {ter,elev,days:allDays};
@@ -774,37 +791,99 @@ function buildDays(u, R){
 
 /* ---------- ამინდი fetch (shared) ---------- */
 async function fetchWeather(pts){
-  // chunk=10 — პატარა batch, URL მოკლე, სანდო
   const CHUNK=20;
-  // CAPE და soil moisture — ცალკე "hourly" endpoint-ზე კი არ არის,
-  // daily-ში soil_moisture_0_to_7cm_mean-ია სწორი სახელი (Open-Meteo v1)
   const DAILY=[
     'precipitation_sum','temperature_2m_max','wind_speed_10m_max',
     'snowfall_sum','wind_gusts_10m_max','precipitation_probability_max',
     'cape_mean','cape_max','soil_moisture_0_to_7cm_mean','freezing_level_height_mean',
     'showers_sum','precipitation_hours'
   ].join(',');
+  // hourly CAPE — ეს არის ერთადერთი სანდო გზა სეტყვის პიკის დასაჭერად
+  // Open-Meteo daily cape_max ხშირად 0-ს ბრუნებს; hourly max ბევრად სანდოა
+  const HOURLY='cape,showers';
   const PROXIES=[
     u=>u,
     u=>`https://corsproxy.io/?${encodeURIComponent(u)}`,
     u=>`https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
   ];
+
+  async function fetchChunk(ch){
+    const lat=ch.map(u=>u.lat.toFixed(4)).join(',');
+    const lon=ch.map(u=>u.lon.toFixed(4)).join(',');
+    // daily fetch
+    const urlD=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}`+
+      `&daily=${DAILY}&past_days=9&forecast_days=7&timezone=Asia%2FTbilisi`;
+    // hourly fetch (CAPE) — ცალკე request, მხოლოდ forecast_days=7+past_days=2 (სიჩქარისთვის)
+    const urlH=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}`+
+      `&hourly=${HOURLY}&past_days=2&forecast_days=7&timezone=Asia%2FTbilisi`;
+
+    let daily=null, hourly=null;
+    for(const proxy of PROXIES){
+      try{
+        const r=await fetch(proxy(urlD),{signal:AbortSignal.timeout(12000)});
+        if(r.ok){daily=await r.json();break;}
+      }catch(e){continue;}
+    }
+    // hourly CAPE — ცალკე, failure ნიშნავს daily-ზე fallback
+    try{
+      for(const proxy of PROXIES){
+        try{
+          const r=await fetch(proxy(urlH),{signal:AbortSignal.timeout(10000)});
+          if(r.ok){hourly=await r.json();break;}
+        }catch(e){continue;}
+      }
+    }catch(e){}
+
+    // hourly CAPE-ს daily max-ად ვაქცევთ per-point
+    // Open-Meteo hourly: time array "YYYY-MM-DDTHH:00", past_days=2 → index 0 = 2 days ago 00:00
+    function hourlyCapePeak(hData, dateStr){
+      // hData: single-point hourly response {hourly:{time:[...],cape:[...]}}
+      if(!hData||!hData.hourly||!hData.hourly.cape||!dateStr) return 0;
+      const times=hData.hourly.time||[];
+      const capes=hData.hourly.cape||[];
+      const showers=hData.hourly.showers||[];
+      let peak=0;
+      times.forEach((t,i)=>{
+        if(t&&t.startsWith(dateStr)){
+          // cape + convective boost from showers
+          const c=(capes[i]||0) + (showers[i]||0)*15;
+          if(c>peak) peak=c;
+        }
+      });
+      return peak;
+    }
+
+    // Merge: hourly cape peak per day → override daily cape
+    if(daily){
+      const dailyArr=Array.isArray(daily)?daily:[daily];
+      const hourlyArr=Array.isArray(hourly)?hourly:(hourly?[hourly]:[]);
+      return dailyArr.map((d,i)=>{
+        const hData=hourlyArr[i]||null;
+        if(!d||!d.daily) return d;
+        const times=d.daily.time||[];
+        // compute hourly cape peak per day and replace daily cape_max
+        const capeMaxHourly=times.map(dateStr=>hourlyCapePeak(hData,dateStr));
+        const capeMaxFinal=capeMaxHourly.map((h,j)=>{
+          const dMax=(d.daily.cape_max||[])[j]||0;
+          const dMean=(d.daily.cape_mean||[])[j]||0;
+          // take best of: hourly peak, daily max, daily mean*2 (mean underestimates peaks)
+          return Math.max(h, dMax, dMean*2.5);
+        });
+        return {...d, daily:{...d.daily, cape_max:capeMaxFinal}};
+      });
+    }
+    return ch.map(()=>null);
+  }
+
   const acc=[];
   for(let i=0;i<pts.length;i+=CHUNK){
     const ch=pts.slice(i,i+CHUNK);
-    const lat=ch.map(u=>u.lat.toFixed(4)).join(',');
-    const lon=ch.map(u=>u.lon.toFixed(4)).join(',');
-    const url=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}`+
-              `&daily=${DAILY}&past_days=9&forecast_days=7&timezone=Asia%2FTbilisi`;
-    let json=null;
-    for(const proxy of PROXIES){
-      try{
-        const res=await fetch(proxy(url),{signal:AbortSignal.timeout(10000)});
-        if(res.ok){json=await res.json();break;}
-      }catch(e){continue;}
+    try{
+      const res=await fetchChunk(ch);
+      acc.push(...res);
+    }catch(e){
+      ch.forEach(()=>acc.push(null));
     }
-    if(json) acc.push(...(Array.isArray(json)?json:[json]));
-    else ch.forEach(()=>acc.push(null)); // ამ chunk-ზე demo fallback
   }
   return acc;
 }
@@ -1046,10 +1125,10 @@ function renderDetail(rec){
      ${rows}
      <div class="wx">
        <div class="wxc"><div class="k">ნალექი</div><div class="v">${d.wx.precip.toFixed(1)}<small> mm</small></div></div>
+       <div class="wxc"><div class="k">კონვ. ნალექი</div><div class="v" style="color:${(d.wx.showers||0)>3?'var(--r-mod)':'inherit'}">${(d.wx.showers||0).toFixed(1)}<small> mm</small></div></div>
        <div class="wxc"><div class="k">3-დღ. ჯამი</div><div class="v">${d.wx.precip3.toFixed(0)}<small> mm</small></div></div>
        <div class="wxc"><div class="k">მაქს. T°</div><div class="v">${d.wx.tmax.toFixed(0)}<small> °C</small></div></div>
-       <div class="wxc"><div class="k">ქარი</div><div class="v">${d.wx.wind.toFixed(0)}<small> km/h</small></div></div>
-       <div class="wxc"><div class="k">თოვა</div><div class="v">${d.wx.snow.toFixed(1)}<small> cm</small></div></div>
+       <div class="wxc"><div class="k">ქარი / გუსტი</div><div class="v">${d.wx.wind.toFixed(0)}<small>/</small>${d.wx.gusts.toFixed(0)}<small> km/h</small></div></div>
        <div class="wxc"><div class="k">CAPE</div><div class="v" style="color:${d.wx.cape>1500?'var(--r-high)':d.wx.cape>500?'var(--r-mod)':'inherit'}">${Math.round(d.wx.cape)}<small> J/kg</small></div></div>
      </div>`;
 }
@@ -1265,6 +1344,16 @@ async function fetchNews(){
   #admin-btn{position:fixed;bottom:64px;right:20px;z-index:8400;background:#0d1320;border:1px solid #27314a;color:#5a6478;border-radius:10px;padding:9px 13px;font-family:'Noto Sans Georgian',sans-serif;font-size:11.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;transition:.15s}
   #admin-btn:hover{border-color:#3da9fc;color:#3da9fc}
   .rule-badge{display:inline-block;font-size:9px;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px;background:rgba(91,206,174,.15);color:#5bceae}
+  .sub-row{display:flex;align-items:center;gap:8px;background:#161d2c;border:1px solid #27314a;border-radius:8px;padding:7px 11px}
+  .sub-row .sub-info{flex:1;font-size:12px;color:#e8edf6}
+  .sub-row .sub-nm{font-weight:700;margin-right:5px}
+  .sub-row .sub-em{color:#8794ad;font-size:11px;font-family:'JetBrains Mono',monospace}
+  .sub-row .sub-del{background:none;border:1px solid #27314a;border-radius:6px;color:#5a6478;padding:3px 7px;cursor:pointer;font-size:11px}
+  .sub-row .sub-del:hover{border-color:#e2543a;color:#e2543a}
+  .ejs-status{font-size:11px;padding:5px 10px;border-radius:6px;margin-top:6px;display:none}
+  .ejs-status.ok{background:rgba(46,194,126,.12);color:#2ec27e;border:1px solid rgba(46,194,126,.3);display:block}
+  .ejs-status.err{background:rgba(226,84,58,.1);color:#e2543a;border:1px solid rgba(226,84,58,.25);display:block}
+  .ejs-status.sending{background:rgba(61,169,252,.08);color:#3da9fc;border:1px solid rgba(61,169,252,.2);display:block}
   `;
   document.head.appendChild(s);
 })();
@@ -1348,13 +1437,51 @@ adminModal.innerHTML=`
         <div id="rules-list" style="display:flex;flex-direction:column;gap:7px;margin-top:4px"></div>
       </div>
       <hr class="asep">
+      <hr class="asep">
+      <!-- ════ EMAIL SECTION ════ -->
+      <div class="arow"><label>📧 EmailJS კონფიგურაცია</label>
+        <div class="hint" style="margin-bottom:8px">
+          1. <a href="https://www.emailjs.com" target="_blank" style="color:#3da9fc">emailjs.com</a> → Sign Up → Email Services → Gmail<br>
+          2. Email Templates → Create → შეინახე Template ID<br>
+          3. Account → Public Key → ჩასვი ქვემოთ
+        </div>
+      </div>
       <div class="arow">
-        <label>ხელით გაფრთხილება (Broadcast)</label>
-        <textarea id="manual-alert-msg" placeholder="შეტყობინების ტექსტი — გაუგზავნე ყველა ბრაუზერ-ტაბს"></textarea>
-        <div class="hint">გამოჩნდება in-app banner-ად. Browser Notification-ი ჩართულ მომხმარებლებს გაეგზავნება.</div>
+        <label>Public Key</label>
+        <input type="text" id="ejs-pubkey" placeholder="user_XXXXXXXXXXXXXXXXXXXX">
+      </div>
+      <div class="arow">
+        <label>Service ID</label>
+        <input type="text" id="ejs-svcid" placeholder="service_xxxxxxx">
+      </div>
+      <div class="arow">
+        <label>Template ID</label>
+        <input type="text" id="ejs-tplid" placeholder="template_xxxxxxx">
       </div>
       <div class="abtns">
-        <button class="abtn primary" onclick="broadcastManualAlert()">📢 გაგზავნა</button>
+        <button class="abtn primary" onclick="saveEmailConfig()">💾 შენახვა</button>
+        <button class="abtn" onclick="testEmailConfig()">📤 ტესტ-მეილი</button>
+      </div>
+      <hr class="asep">
+      <div class="arow">
+        <label>📋 გამოწერის სია (Subscribers)</label>
+        <div id="subscriber-list" style="display:flex;flex-direction:column;gap:5px;margin-bottom:8px"></div>
+        <div class="inline" style="gap:6px">
+          <input type="email" id="sub-email" placeholder="email@example.com" style="flex:1">
+          <input type="text" id="sub-name" placeholder="სახელი" style="width:110px">
+          <button class="abtn primary" style="white-space:nowrap;padding:8px 12px" onclick="addSubscriber()">+ დამატება</button>
+        </div>
+        <div class="hint" style="margin-top:6px">Subscribers-ს ეგზავნებათ email წესის ავტომატური ან ხელით გაფრთხილებისას.</div>
+      </div>
+      <hr class="asep">
+      <div class="arow">
+        <label>📢 ხელით Email-გაფრთხილება</label>
+        <input type="text" id="manual-subject" placeholder="სათაური — მაგ. ⚠ სეტყვა მოსალოდნელია!" style="margin-bottom:6px">
+        <textarea id="manual-alert-msg" placeholder="შეტყობინების ტექსტი…" style="min-height:80px"></textarea>
+        <div class="hint">გაეგზავნება ყველა subscriber-ს + in-app banner.</div>
+      </div>
+      <div class="abtns">
+        <button class="abtn primary" onclick="broadcastManualAlert()">📢 Email + Banner</button>
         <button class="abtn danger" onclick="clearAllRules()">🗑 ყველა წესის წაშლა</button>
       </div>
     </div>
@@ -1381,6 +1508,7 @@ function adminLogin(){
     document.getElementById('admin-content').style.flexDirection='column';
     document.getElementById('admin-content').style.gap='18px';
     renderRules();
+    loadEmailConfig(); // populate EmailJS fields + subscriber list
   } else {
     document.getElementById('admin-pass').style.borderColor='#e2543a';
     setTimeout(()=>document.getElementById('admin-pass').style.borderColor='',1200);
@@ -1466,14 +1594,194 @@ function testAlertRules(){
   if(!fired) showInAppAlert('✅','შემოწმება დასრულდა','ამ მომენტისთვის წინ გაფრთხილება არ ესაჭიროება.','hail');
 }
 
-function broadcastManualAlert(){
+/* ════════════════════════════════════════════════════════════
+   📧 EMAILJS — Subscriber Mailing System
+   ════════════════════════════════════════════════════════════ */
+
+// EmailJS SDK ჩვენ ჩავტვირთავთ lazy (მხოლოდ გამოყენებისას)
+let _ejsLoaded=false;
+function loadEmailJS(){
+  return new Promise((res,rej)=>{
+    if(_ejsLoaded){res();return;}
+    const s=document.createElement('script');
+    s.src='https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js';
+    s.onload=()=>{_ejsLoaded=true;res();};
+    s.onerror=()=>rej(new Error('EmailJS SDK ვერ ჩაიტვირთა'));
+    document.head.appendChild(s);
+  });
+}
+
+// Config + Subscribers — localStorage-ში ინახება
+let ejsConfig={pubKey:'',serviceId:'',templateId:''};
+let subscribers=[]; // [{id,name,email}]
+
+function saveEmailConfig(){
+  ejsConfig.pubKey   = document.getElementById('ejs-pubkey').value.trim();
+  ejsConfig.serviceId= document.getElementById('ejs-svcid').value.trim();
+  ejsConfig.templateId=document.getElementById('ejs-tplid').value.trim();
+  if(!ejsConfig.pubKey||!ejsConfig.serviceId||!ejsConfig.templateId){
+    showEjsStatus('შეავსე ყველა ველი (Public Key, Service ID, Template ID)','err');return;
+  }
+  try{localStorage.setItem('geohazard_ejs_cfg',JSON.stringify(ejsConfig));}catch(e){}
+  showEjsStatus('✅ კონფიგურაცია შენახულია!','ok');
+}
+
+function loadEmailConfig(){
+  try{
+    const s=localStorage.getItem('geohazard_ejs_cfg');
+    if(s){
+      ejsConfig=JSON.parse(s);
+      if(document.getElementById('ejs-pubkey')){
+        document.getElementById('ejs-pubkey').value=ejsConfig.pubKey||'';
+        document.getElementById('ejs-svcid').value=ejsConfig.serviceId||'';
+        document.getElementById('ejs-tplid').value=ejsConfig.templateId||'';
+      }
+    }
+    const ss=localStorage.getItem('geohazard_subscribers');
+    if(ss) subscribers=JSON.parse(ss);
+  }catch(e){}
+  renderSubscribers();
+}
+
+function saveSubscribers(){
+  try{localStorage.setItem('geohazard_subscribers',JSON.stringify(subscribers));}catch(e){}
+}
+
+function addSubscriber(){
+  const email=document.getElementById('sub-email').value.trim();
+  const name=document.getElementById('sub-name').value.trim()||email.split('@')[0];
+  if(!email||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+    showEjsStatus('სწორი email-ის ფორმატი: name@domain.com','err');return;
+  }
+  if(subscribers.find(s=>s.email===email)){
+    showEjsStatus('ეს email უკვე სიაშია','err');return;
+  }
+  subscribers.push({id:Date.now(),name,email});
+  saveSubscribers(); renderSubscribers();
+  document.getElementById('sub-email').value='';
+  document.getElementById('sub-name').value='';
+  showEjsStatus(`✅ დამატებულია: ${name} <${email}>`,'ok');
+}
+
+function removeSubscriber(id){
+  subscribers=subscribers.filter(s=>s.id!==id);
+  saveSubscribers(); renderSubscribers();
+}
+
+function renderSubscribers(){
+  const el=document.getElementById('subscriber-list'); if(!el)return;
+  if(!subscribers.length){
+    el.innerHTML='<div style="color:#5a6478;font-size:11.5px">გამომწერი არ არის. დაამატე ქვემოთ.</div>';return;
+  }
+  el.innerHTML=subscribers.map(s=>`
+    <div class="sub-row">
+      <div class="sub-info">
+        <span class="sub-nm">${s.name}</span>
+        <span class="sub-em">${s.email}</span>
+      </div>
+      <button class="sub-del" onclick="removeSubscriber(${s.id})">✕</button>
+    </div>`).join('');
+}
+
+function showEjsStatus(msg,type='ok'){
+  // status div — შევქმნათ თუ არ არის
+  let el=document.getElementById('ejs-status-msg');
+  if(!el){
+    el=document.createElement('div'); el.id='ejs-status-msg'; el.className='ejs-status';
+    const body=document.getElementById('admin-content'); if(body) body.prepend(el);
+  }
+  el.className='ejs-status '+type; el.textContent=msg;
+  if(type==='ok') setTimeout(()=>el.className='ejs-status',4000);
+}
+
+// ერთი email გაგზავნა EmailJS-ით
+async function sendOneEmail(toName, toEmail, subject, message, extraParams={}){
+  await loadEmailJS();
+  emailjs.init({publicKey: ejsConfig.pubKey});
+  const params={
+    to_name:   toName,
+    to_email:  toEmail,
+    subject:   subject,
+    message:   message,
+    date:      new Date().toLocaleDateString('ka-GE',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}),
+    ...extraParams
+  };
+  return emailjs.send(ejsConfig.serviceId, ejsConfig.templateId, params);
+}
+
+// ყველა subscriber-ს გაგზავნა
+async function sendToAllSubscribers(subject, message, extraParams={}){
+  if(!ejsConfig.pubKey||!ejsConfig.serviceId||!ejsConfig.templateId){
+    showEjsStatus('EmailJS კონფიგურაცია არ არის შენახული. შეავსე ზემოთ.','err');return 0;
+  }
+  if(!subscribers.length){
+    showEjsStatus('გამომწერის სია ცარიელია.','err');return 0;
+  }
+  showEjsStatus(`📤 ${subscribers.length} მეილი იგზავნება…`,'sending');
+  let ok=0, fail=0;
+  for(const sub of subscribers){
+    try{
+      await sendOneEmail(sub.name, sub.email, subject, message, extraParams);
+      ok++;
+      await new Promise(r=>setTimeout(r,300)); // rate limit — 300ms შუა
+    }catch(e){
+      fail++;
+      console.warn('email failed:',sub.email,e.text||e.message);
+    }
+  }
+  const msg=`✅ გაგზავნილია: ${ok}/${subscribers.length}${fail?' · ❌ ვერ გაიგზავნა: '+fail:''}`;
+  showEjsStatus(msg, fail?'err':'ok');
+  return ok;
+}
+
+async function testEmailConfig(){
+  if(!ejsConfig.pubKey) saveEmailConfig();
+  if(!ejsConfig.pubKey){showEjsStatus('შეავსე კონფიგურაცია','err');return;}
+  if(!subscribers.length){showEjsStatus('დაამატე სულ მცირე ერთი subscriber ტესტისთვის','err');return;}
+  const first=subscribers[0];
+  showEjsStatus('📤 ტესტ-მეილი იგზავნება…','sending');
+  try{
+    await sendOneEmail(first.name, first.email,
+      '✅ GeoHazard — ტესტ-მეილი',
+      'EmailJS კონფიგურაცია წარმატებულია! GeoHazard-ის გაფრთხილებები ამ მისამართზე მოვა.',
+      {muni:'—',hazard_name:'ტესტი',risk_value:'—'});
+    showEjsStatus(`✅ ტესტ-მეილი გაიგზავნა → ${first.email}`,'ok');
+  }catch(e){
+    showEjsStatus('❌ შეცდომა: '+(e.text||e.message||JSON.stringify(e)),'err');
+  }
+}
+
+// Broadcast — email + in-app + browser notification
+async function broadcastManualAlert(){
   if(!adminAuth)return;
+  const subject=(document.getElementById('manual-subject')?.value||'').trim()||'⚠ GeoHazard გაფრთხილება';
   const msg=document.getElementById('manual-alert-msg').value.trim();
-  if(!msg){alert('შეიყვანე ტექსტი');return;}
-  showInAppAlert('📢','ადმინის გაფრთხილება',msg,'danger');
-  sendAlert('📢 GeoHazard გაფრთხილება',msg,'manual_'+Date.now());
+  if(!msg){showEjsStatus('შეიყვანე ტექსტი','err');return;}
+  // in-app + browser
+  showInAppAlert('📢','ადმინის გაფრთხილება: '+subject,msg,'danger');
+  sendAlert('📢 '+subject,msg,'manual_'+Date.now());
+  // email
+  if(ejsConfig.pubKey&&subscribers.length){
+    await sendToAllSubscribers(subject, msg);
+  } else {
+    showEjsStatus('in-app გაფრთხილება გაიგზავნა. Email-ისთვის შეავსე EmailJS კონფიგურაცია.','ok');
+  }
   document.getElementById('manual-alert-msg').value='';
-  closeAdmin();
+  if(document.getElementById('manual-subject')) document.getElementById('manual-subject').value='';
+}
+
+// ავტომატური rule-triggered email
+async function sendRuleEmail(rule, rec, v, slot){
+  if(!ejsConfig.pubKey||!subscribers.length) return;
+  const subject=`${HAZ_IC[rule.haz]} GeoHazard: ${HAZ_KA[rule.haz]||rule.haz} — ${rec.muni.n}`;
+  const message=rule.msg||`${rec.muni.n}-ში (${rec.muni.r}) ${HAZ_KA[rule.haz]||rule.haz}-ის საფრთხე ≥${rule.thresh}/100.\nპროგნოზული მნიშვნელობა: ${Math.round(v)}/100 (+${rule.days} დღე).`;
+  try{
+    await sendToAllSubscribers(subject, message,{
+      muni: rec.muni.n+' · '+rec.muni.r,
+      hazard_name: HAZ_KA[rule.haz]||rule.haz,
+      risk_value: Math.round(v)
+    });
+  }catch(e){console.warn('rule email error:',e);}
 }
 
 function clearAllRules(){
@@ -1498,22 +1806,31 @@ function testAlertRulesQuiet(){
       const d=rec.days[slot]; if(!d)return;
       const v=d[rule.haz]||0;
       if(v>=rule.thresh){
-        const title=rule.msg||`${HAZ_IC[rule.haz]} ${HAZ_KA[rule.haz]||rule.haz}: ${rec.muni.n}`;
-        const body=`${rec.muni.n} · ${Math.round(v)}/100 (+${rule.days} დღე)`;
-        sendAlert(title,body,`rule_${rule.id}_${rec.muni.id}_${slot}`);
-        showInAppAlert(HAZ_IC[rule.haz]||'⚠',title,body,'hail');
+        const tag=`rule_${rule.id}_${rec.muni.id}_${slot}`;
+        if(!lastAlerts.has(tag)){
+          // in-app + browser
+          const title=rule.msg||`${HAZ_IC[rule.haz]} ${HAZ_KA[rule.haz]||rule.haz}: ${rec.muni.n}`;
+          const body=`${rec.muni.n} · ${Math.round(v)}/100 (+${rule.days} დღე)`;
+          sendAlert(title,body,tag);
+          showInAppAlert(HAZ_IC[rule.haz]||'⚠',title,body,'hail');
+          // email — async, no await (fire-and-forget)
+          sendRuleEmail(rule,rec,v,slot);
+        }
       }
     });
   });
 }
 
-// expose admin functions
+// expose all functions
 window.closeAdmin=closeAdmin; window.adminLogin=adminLogin; window.addAlertRule=addAlertRule;
 window.deleteRule=deleteRule; window.toggleRule=toggleRule; window.testAlertRules=testAlertRules;
 window.broadcastManualAlert=broadcastManualAlert; window.clearAllRules=clearAllRules;
+window.saveEmailConfig=saveEmailConfig; window.testEmailConfig=testEmailConfig;
+window.addSubscriber=addSubscriber; window.removeSubscriber=removeSubscriber;
 
-// load saved rules on startup
+// load saved rules + email config on startup
 loadRules();
+loadEmailConfig();
 
 /* ============================================================
    🔔 შეტყობინებების სისტემა (Notification API + in-app alert)
